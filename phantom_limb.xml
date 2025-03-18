@@ -8,18 +8,13 @@
     </extension>
 
     <asset>
-        <material name="mat_bones" rgba="1 1 1 1"/>
+        <material name="mat_bones" rgba="0.2 0.2 0.2 1"/>
 
-        <mesh file="r_pelvis.stl" name="r_pelvis"/>
-        <mesh file="l_pelvis.stl" name="l_pelvis"/>
-        <mesh file="sacrum.stl" name="sacrum"/>
-        <mesh file="l_femur.stl" name="l_femur"/>
-        <mesh file="l_tibia.stl" name="l_tibia"/>
-        <mesh file="l_fibula.stl" name="l_fibula"/>
-        <mesh file="l_talus.stl" name="l_talus"/>
-        <mesh file="l_foot.stl" name="l_foot"/>
-        <mesh file="l_bofoot.stl" name="l_bofoot"/>
-        <mesh file="l_patella.stl" name="l_patella"/>
+        <mesh file="l_pelvis_phantom.stl" name="l_pelvis"/>
+        <mesh file="l_femur_phantom.stl" name="l_femur"/>
+        <mesh file="l_tibia_phantom.stl" name="l_tibia"/>
+        <mesh file="l_foot_phantom.stl" name="l_foot"/>
+        <mesh file="platform.stl" name="platform"/>
     </asset>
 
     <default>
@@ -37,7 +32,7 @@
     </actuator>
 
     <equality>
-        <weld body1="calcn_l" body2="platform"/>
+        <weld body1="foot_l" body2="platform"/>
     </equality>
 
     <sensor>
@@ -45,9 +40,9 @@
     </sensor>
 
     <worldbody>
-        <body name="platform" pos="0 0 0.04" childclass="bones">
+        <body name="platform" pos="-0.065 0.075 0.06" childclass="bones">
             <joint type="slide" axis="0 0 1" name="platform_slide" range="-0.5 0.5"/>
-            <geom name="platform" type="box" size="0.3 0.3 0.01" mass="1"/>
+            <geom mesh="platform" name="platform" type="mesh" mass="1" quat="0.707107 0.707107 0 0"/>
         </body>
 
         <body name="pelvis" pos="0 0 1" quat="0.707107 0.707107 0 0" childclass="bones">
@@ -57,53 +52,223 @@
             <body name="femur_l" pos="-0.056276 -0.07849 -0.07726">
                 <inertial pos="0 -0.195 0.0005" quat="0.7062 -0.708013 0 0" mass="0.3" diaginertia="0.1694 0.1694 0.0245269" />
                 <joint axis="0 0 1" name="hip_flexion_l" pos="0 0 0" range="-0.523599 2.0944"/>
-                <joint axis="-1 0 0" name="hip_adduction_l" pos="0 0 0" range="-0.872665 0.523599"/>
-                <joint axis="0 -1 0" name="hip_rotation_l" pos="0 0 0" range="-0.698132 0.698132"/>
                 <geom mesh="l_femur" name="l_femur" type="mesh"/>
 
-                <body name="thigh_l" pos="0 -0.2 0" childclass="flexbody">
-                    <flexcomp type="gmsh" file="test_thigh.msh" pos="-0.1 -0.25 -0.1" scale="0.8 0.8 0.8" radius="0.001" rgba=".9 .7 .0 .5" name="ball" dim="2" mass="8.1">
+                <body name="thigh_l" pos="0 0 0" childclass="flexbody">
+                    <flexcomp type="gmsh" file="l_thigh.msh" radius="0.001" rgba=".9 .7 .0 .3" name="l_thigh" dim="2" mass="8.1">
                         <contact condim="3" solref="0.01 1" solimp=".95 .99 .0001" selfcollide="none"/>
                         <edge damping="1"/>
                         <plugin plugin="mujoco.elasticity.solid">
                             <config key="poisson" value="0.25"/>
                             <config key="young" value="5e4"/>
                         </plugin>
-                        <pin id="194"/>
-                        <pin id="232"/>
-                        <pin id="199"/>
-                        <pin id="256"/>
+                        <pin id="41"/>
+                        <pin id="52"/>
+                        <pin id="58"/>
+                        <pin id="48"/>
+                        <pin id="68"/>
+                        <pin id="215"/>
+                        <pin id="188"/>
+                        <pin id="59"/>
+                        <pin id="84"/>
+                        <pin id="45"/>
+                        <pin id="50"/>
+                        <pin id="56"/>
+                        <pin id="224"/>
                         <pin id="204"/>
+                        <pin id="57"/>
+                        <pin id="70"/>
+                        <pin id="169"/>
+                        <pin id="196"/>
+                        <pin id="209"/>
+                        <pin id="197"/>
+                        <pin id="60"/>
+                        <pin id="189"/>
+                        <pin id="228"/>
+                        <pin id="85"/>
+                        <pin id="227"/>
+                        <pin id="208"/>
+                        <pin id="71"/>
+                        <pin id="76"/>
+                        <pin id="203"/>
+                        <pin id="184"/>
+                        <pin id="199"/>
+                        <pin id="73"/>
+                        <pin id="202"/>
+                        <pin id="93"/>
+                        <pin id="187"/>
+                        <pin id="216"/>
+                        <pin id="192"/>
+                        <pin id="205"/>
+                        <pin id="210"/>
+                        <pin id="218"/>
+                        <pin id="96"/>
+                        <pin id="217"/>
+                        <pin id="89"/>
+                        <pin id="81"/>
+                        <pin id="88"/>
+                        <pin id="79"/>
+                        <pin id="211"/>
+                        <pin id="99"/>
+                        <pin id="222"/>
+                        <pin id="201"/>
+                        <pin id="220"/>
+                        <pin id="95"/>
+                        <pin id="219"/>
+                        <pin id="77"/>
+                        <pin id="175"/>
+                        <pin id="178"/>
+                        <pin id="82"/>
+                        <pin id="97"/>
+                        <pin id="91"/>
+                        <pin id="206"/>
+                        <pin id="194"/>
+                        <pin id="94"/>
+                        <pin id="80"/>
+                        <pin id="83"/>
+                        <pin id="69"/>
                     </flexcomp>
                 </body>
 
                 <body name="tibia_l" pos="-4.6e-07 -0.404425 0.00126526">
                     <inertial pos="-0.005 -0.175 -0.0025" quat="0.712137 -0.701754 0.0200501 0" mass="3.8" diaginertia="0.0771589 0.0771589 0.00690387" />
-                    <joint axis="-0.992246 -0.123982 -0.00878916" name="knee_angle_l_translation2" pos="0 0 0" range="-0.006792 -7.69254e-11" type="slide"/>
-                    <joint axis="-0.124293 0.989762 0.0701648" name="knee_angle_l_translation1" pos="0 0 0" range="9.53733e-08 0.00159883" type="slide"/>
-                    <!-- <joint axis="3.98373e-10 0.0707131 -0.997497" name="knee_angle_l" pos="0 0 0" range="0 2.0944"/> -->
-                    <joint axis="3.98373e-10 0.0707131 -0.997497" name="knee_angle_l" pos="0 0 0" range="0 2.0944"/>
-                    <joint axis="-0.992246 -0.123982 -0.00878916" name="knee_angle_l_rotation2" pos="0 0 0" range="-0.00167821 0.0335354"/>
-                    <joint axis="-0.124293 0.989762 0.0701648" name="knee_angle_l_rotation3" pos="0 0 0" range="-0.262788 -1.08939e-08"/>
+                    <joint axis="0 0 -1" name="knee_angle_l" pos="0 0 0" range="0 2.0944"/>
                     <geom mesh="l_tibia" name="l_tibia" type="mesh"/>
-                    <geom mesh="l_fibula" name="l_fibula" type="mesh"/>
 
-                    <body name="talus_l" pos="-0.01 -0.4 0">
-                        <!-- <joint axis="0.105014 0.174022 0.979126" name="ankle_angle_l" pos="0 0 0" range="-0.698132 0.523599"/> -->
-                        <joint axis="0.105014 0.174022 0.979126" name="ankle_angle_l" pos="0 0 0" range="-0.698132 0.523599"/>
-                        <geom mesh="l_talus" name="l_talus" type="mesh"/>
+                    <body name="shank_l" pos="0 0 0" childclass="flexbody">
+                        <flexcomp type="gmsh" file="l_shank.msh" radius="0.001" rgba=".9 .7 .0 .3" name="l_shank" dim="2" mass="8.1">
+                            <contact condim="3" solref="0.01 1" solimp=".95 .99 .0001" selfcollide="none"/>
+                            <edge damping="1"/>
+                            <plugin plugin="mujoco.elasticity.solid">
+                                <config key="poisson" value="0.25"/>
+                                <config key="young" value="5e4"/>
+                            </plugin>
+                            <pin id="76"/>
+                            <pin id="90"/>
+                            <pin id="65"/>
+                            <pin id="64"/>
+                            <pin id="200"/>
+                            <pin id="74"/>
+                            <pin id="85"/>
+                            <pin id="109"/>
+                            <pin id="100"/>
+                            <pin id="117"/>
+                            <pin id="243"/>
+                            <pin id="169"/>
+                            <pin id="164"/>
+                            <pin id="146"/>
+                            <pin id="98"/>
+                            <pin id="213"/>
+                            <pin id="92"/>
+                            <pin id="79"/>
+                            <pin id="73"/>
+                            <pin id="97"/>
+                            <pin id="89"/>
+                            <pin id="75"/>
+                            <pin id="235"/>
+                            <pin id="196"/>
+                            <pin id="230"/>
+                            <pin id="91"/>
+                            <pin id="228"/>
+                            <pin id="236"/>
+                            <pin id="237"/>
+                            <pin id="253"/>
+                            <pin id="234"/>
+                            <pin id="263"/>
+                            <pin id="82"/>
+                            <pin id="197"/>
+                            <pin id="254"/>
+                            <pin id="227"/>
+                            <pin id="233"/>
+                            <pin id="247"/>
+                            <pin id="88"/>
+                            <pin id="70"/>
+                            <pin id="255"/>
+                            <pin id="69"/>
+                            <pin id="211"/>
+                            <pin id="225"/>
+                            <pin id="216"/>
+                            <pin id="212"/>
+                            <pin id="203"/>
+                            <pin id="239"/>
+                            <pin id="238"/>
+                            <pin id="259"/>
+                            <pin id="80"/>
+                            <pin id="220"/>
+                            <pin id="95"/>
+                            <pin id="246"/>
+                            <pin id="265"/>
+                            <pin id="260"/>
+                            <pin id="204"/>
+                            <pin id="226"/>
+                            <pin id="219"/>
+                            <pin id="208"/>
+                            <pin id="205"/>
+                            <pin id="207"/>
+                            <pin id="210"/>
+                            <pin id="96"/>
+                            <pin id="78"/>
+                            <pin id="77"/>
+                            <pin id="86"/>
+                            <pin id="102"/>
+                            <pin id="121"/>
+                            <pin id="115"/>
+                            <pin id="108"/>
+                            <pin id="156"/>
+                            <pin id="158"/>
+                            <pin id="214"/>
+                            <pin id="140"/>
+                            <pin id="159"/>
+                            <pin id="206"/>
+                            <pin id="116"/>
+                            <pin id="113"/>
+                            <pin id="160"/>
+                            <pin id="137"/>
+                            <pin id="264"/>
+                            <pin id="122"/>
+                            <pin id="157"/>
+                            <pin id="241"/>
+                            <pin id="240"/>
+                            <pin id="118"/>
+                            <pin id="143"/>
+                            <pin id="252"/>
+                            <pin id="248"/>
+                            <pin id="145"/>
+                            <pin id="123"/>
+                            <pin id="256"/>
+                            <pin id="130"/>
+                            <pin id="251"/>
+                            <pin id="154"/>
+                            <pin id="129"/>
+                            <pin id="232"/>
+                            <pin id="141"/>
+                            <pin id="222"/>
+                            <pin id="221"/>
+                            <pin id="223"/>
+                            <pin id="231"/>
+                            <pin id="202"/>
+                            <pin id="257"/>
+                            <pin id="258"/>
+                            <pin id="114"/>
+                            <pin id="112"/>
+                            <pin id="195"/>
+                            <pin id="136"/>
+                            <pin id="224"/>
+                            <pin id="147"/>
+                            <pin id="110"/>
+                            <pin id="217"/>
+                            <pin id="111"/>
+                            <pin id="125"/>
+                            <pin id="134"/>
+                            <pin id="144"/>
+                            <pin id="131"/>
+                        </flexcomp>
+                    </body>
+
+                    <body name="foot_l" pos="-0.01 -0.4 0">
+                        <joint axis="0 0 1" name="ankle_angle_l" pos="0 0 0" range="-0.9 0.9"/>
+                        <geom mesh="l_foot" name="l_foot" type="mesh"/>
                         <site name="ankle_sensor" pos="0 0 0"/>
-
-                        <body name="calcn_l" pos="-0.04877 -0.04195 -0.00792">
-                            <inertial pos="0.0821377 0.0108024 0.000944392" quat="0.541341 0.502987 0.458598 0.493601" mass="1.14" diaginertia="0.00313636 0.00297113 0.000941737" />
-                            <joint axis="-0.78718 -0.604747 -0.120949" name="subtalar_angle_l" pos="0 0 0" range="-0.349066 0.349066"/>
-                            <geom mesh="l_foot" name="l_foot" type="mesh"/>
-
-                            <body name="toes_l" pos="0.1788 -0.002 -0.00108">
-                                <joint axis="-0.580954 0 -0.813936" name="mtp_angle_l" pos="0 0 0" range="-0.523599 0.523599"/>
-                                <geom mesh="l_bofoot" name="l_bofoot" type="mesh"/>
-                            </body>
-                        </body>
                     </body>
                 </body>
             </body>

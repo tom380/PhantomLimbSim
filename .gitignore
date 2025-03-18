@@ -1,2 +1,5 @@
 .conda/
 .vscode/
+*.msh__sf.obj
+*.msh__tracked_surface.stl
+*.msh_.csv
