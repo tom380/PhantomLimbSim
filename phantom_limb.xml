@@ -8,18 +8,13 @@
     </extension>
 
     <asset>
-        <material name="mat_bones" rgba="1 1 1 1"/>
+        <material name="mat_bones" rgba="0.2 0.2 0.2 1"/>
 
-        <mesh file="r_pelvis.stl" name="r_pelvis"/>
-        <mesh file="l_pelvis.stl" name="l_pelvis"/>
-        <mesh file="sacrum.stl" name="sacrum"/>
-        <mesh file="l_femur.stl" name="l_femur"/>
-        <mesh file="l_tibia.stl" name="l_tibia"/>
-        <mesh file="l_fibula.stl" name="l_fibula"/>
-        <mesh file="l_talus.stl" name="l_talus"/>
-        <mesh file="l_foot.stl" name="l_foot"/>
-        <mesh file="l_bofoot.stl" name="l_bofoot"/>
-        <mesh file="l_patella.stl" name="l_patella"/>
+        <mesh file="l_pelvis_phantom.stl" name="l_pelvis"/>
+        <mesh file="l_femur_phantom.stl" name="l_femur"/>
+        <mesh file="l_tibia_phantom.stl" name="l_tibia"/>
+        <mesh file="l_foot_phantom.stl" name="l_foot"/>
+        <mesh file="platform.stl" name="platform"/>
     </asset>
 
     <default>
@@ -37,7 +32,7 @@
     </actuator>
 
     <equality>
-        <weld body1="calcn_l" body2="platform"/>
+        <weld body1="foot_l" body2="platform"/>
     </equality>
 
     <sensor>
@@ -45,9 +40,9 @@
     </sensor>
 
     <worldbody>
-        <body name="platform" pos="0 0 0.04" childclass="bones">
+        <body name="platform" pos="-0.065 0.075 0.06" childclass="bones">
             <joint type="slide" axis="0 0 1" name="platform_slide" range="-0.5 0.5"/>
-            <geom name="platform" type="box" size="0.3 0.3 0.01" mass="1"/>
+            <geom mesh="platform" name="platform" type="mesh" mass="1" quat="0.707107 0.707107 0 0"/>
         </body>
 
         <body name="pelvis" pos="0 0 1" quat="0.707107 0.707107 0 0" childclass="bones">
@@ -57,12 +52,10 @@
             <body name="femur_l" pos="-0.056276 -0.07849 -0.07726">
                 <inertial pos="0 -0.195 0.0005" quat="0.7062 -0.708013 0 0" mass="0.3" diaginertia="0.1694 0.1694 0.0245269" />
                 <joint axis="0 0 1" name="hip_flexion_l" pos="0 0 0" range="-0.523599 2.0944"/>
-                <joint axis="-1 0 0" name="hip_adduction_l" pos="0 0 0" range="-0.872665 0.523599"/>
-                <joint axis="0 -1 0" name="hip_rotation_l" pos="0 0 0" range="-0.698132 0.698132"/>
                 <geom mesh="l_femur" name="l_femur" type="mesh"/>
 
                 <body name="thigh_l" pos="0 0 0" childclass="flexbody">
-                    <flexcomp type="gmsh" file="l_thigh.msh" radius="0.001" rgba=".9 .7 .0 .5" name="l_thigh" dim="2" mass="8.1">
+                    <flexcomp type="gmsh" file="l_thigh.msh" radius="0.001" rgba=".9 .7 .0 .3" name="l_thigh" dim="2" mass="8.1">
                         <contact condim="3" solref="0.01 1" solimp=".95 .99 .0001" selfcollide="none"/>
                         <edge damping="1"/>
                         <plugin plugin="mujoco.elasticity.solid">
@@ -139,17 +132,11 @@
 
                 <body name="tibia_l" pos="-4.6e-07 -0.404425 0.00126526">
                     <inertial pos="-0.005 -0.175 -0.0025" quat="0.712137 -0.701754 0.0200501 0" mass="3.8" diaginertia="0.0771589 0.0771589 0.00690387" />
-                    <joint axis="-0.992246 -0.123982 -0.00878916" name="knee_angle_l_translation2" pos="0 0 0" range="-0.006792 -7.69254e-11" type="slide"/>
-                    <joint axis="-0.124293 0.989762 0.0701648" name="knee_angle_l_translation1" pos="0 0 0" range="9.53733e-08 0.00159883" type="slide"/>
-                    <!-- <joint axis="3.98373e-10 0.0707131 -0.997497" name="knee_angle_l" pos="0 0 0" range="0 2.0944"/> -->
-                    <joint axis="3.98373e-10 0.0707131 -0.997497" name="knee_angle_l" pos="0 0 0" range="0 2.0944"/>
-                    <joint axis="-0.992246 -0.123982 -0.00878916" name="knee_angle_l_rotation2" pos="0 0 0" range="-0.00167821 0.0335354"/>
-                    <joint axis="-0.124293 0.989762 0.0701648" name="knee_angle_l_rotation3" pos="0 0 0" range="-0.262788 -1.08939e-08"/>
+                    <joint axis="0 0 -1" name="knee_angle_l" pos="0 0 0" range="0 2.0944"/>
                     <geom mesh="l_tibia" name="l_tibia" type="mesh"/>
-                    <geom mesh="l_fibula" name="l_fibula" type="mesh"/>
 
                     <body name="shank_l" pos="0 0 0" childclass="flexbody">
-                        <flexcomp type="gmsh" file="l_shank.msh" radius="0.001" rgba=".9 .7 .0 .5" name="l_shank" dim="2" mass="8.1">
+                        <flexcomp type="gmsh" file="l_shank.msh" radius="0.001" rgba=".9 .7 .0 .3" name="l_shank" dim="2" mass="8.1">
                             <contact condim="3" solref="0.01 1" solimp=".95 .99 .0001" selfcollide="none"/>
                             <edge damping="1"/>
                             <plugin plugin="mujoco.elasticity.solid">
@@ -278,22 +265,10 @@
                         </flexcomp>
                     </body>
 
-                    <body name="talus_l" pos="-0.01 -0.4 0">
-                        <!-- <joint axis="0.105014 0.174022 0.979126" name="ankle_angle_l" pos="0 0 0" range="-0.698132 0.523599"/> -->
-                        <joint axis="0.105014 0.174022 0.979126" name="ankle_angle_l" pos="0 0 0" range="-0.698132 0.523599"/>
-                        <geom mesh="l_talus" name="l_talus" type="mesh"/>
+                    <body name="foot_l" pos="-0.01 -0.4 0">
+                        <joint axis="0 0 1" name="ankle_angle_l" pos="0 0 0" range="-0.9 0.9"/>
+                        <geom mesh="l_foot" name="l_foot" type="mesh"/>
                         <site name="ankle_sensor" pos="0 0 0"/>
-
-                        <body name="calcn_l" pos="-0.04877 -0.04195 -0.00792">
-                            <inertial pos="0.0821377 0.0108024 0.000944392" quat="0.541341 0.502987 0.458598 0.493601" mass="1.14" diaginertia="0.00313636 0.00297113 0.000941737" />
-                            <joint axis="-0.78718 -0.604747 -0.120949" name="subtalar_angle_l" pos="0 0 0" range="-0.349066 0.349066"/>
-                            <geom mesh="l_foot" name="l_foot" type="mesh"/>
-
-                            <body name="toes_l" pos="0.1788 -0.002 -0.00108">
-                                <joint axis="-0.580954 0 -0.813936" name="mtp_angle_l" pos="0 0 0" range="-0.523599 0.523599"/>
-                                <geom mesh="l_bofoot" name="l_bofoot" type="mesh"/>
-                            </body>
-                        </body>
                     </body>
                 </body>
             </body>
