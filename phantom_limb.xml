@@ -14,6 +14,7 @@
         <mesh file="l_femur_phantom.stl" name="l_femur"/>
         <mesh file="l_tibia_phantom.stl" name="l_tibia"/>
         <mesh file="l_foot_phantom.stl" name="l_foot"/>
+        <mesh file="l_thigh_band.STL" name="l_thigh_band"/>
         <mesh file="platform.stl" name="platform"/>
     </asset>
 
@@ -21,6 +22,9 @@
         <default class="bones">
             <joint armature="0.01" damping="0.5" limited="true"/>
             <geom margin="0.001" material="mat_bones" conaffinity="0" contype="0"/>
+        </default>
+        <default class="exosuit">
+            <geom conaffinity="1" contype="1"/>
         </default>
         <default class="flexbody">
             <joint armature="0" damping="0" limited="false"/>
@@ -128,6 +132,11 @@
                         <pin id="83"/>
                         <pin id="69"/>
                     </flexcomp>
+                </body>
+
+                <body name="thigh_band_l" pos="0 0 0" childclass="exosuit">
+                    <joint axis="0 0 1" name="thigh_band_knee" pos="-4.6e-07 -0.404425 0.00126526"/>
+                    <geom mesh="l_thigh_band" name="l_thigh_band" type="mesh"/>
                 </body>
 
                 <body name="tibia_l" pos="-4.6e-07 -0.404425 0.00126526">
