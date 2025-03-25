@@ -7,24 +7,19 @@
         <plugin plugin="mujoco.elasticity.solid"/>
     </extension>
 
+    <visual>
+        <map force="0.001"/>
+    </visual>
+
     <asset>
         <material name="mat_bones" rgba="0.2 0.2 0.2 1"/>
+        <material name="exosuit" rgba="0.2 0.2 0.2 1"/>
 
         <mesh file="l_pelvis_phantom.stl" name="l_pelvis"/>
         <mesh file="l_femur_phantom.stl" name="l_femur"/>
         <mesh file="l_tibia_phantom.stl" name="l_tibia"/>
         <mesh file="l_foot_phantom.stl" name="l_foot"/>
         <!-- <mesh file="decomp.stl" name="l_thigh_band"/> -->
-        <mesh file="l_thigh_band000.obj" name="l_thigh_band000"/>
-        <mesh file="l_thigh_band001.obj" name="l_thigh_band001"/>
-        <mesh file="l_thigh_band002.obj" name="l_thigh_band002"/>
-        <mesh file="l_thigh_band003.obj" name="l_thigh_band003"/>
-        <mesh file="l_thigh_band004.obj" name="l_thigh_band004"/>
-        <mesh file="l_thigh_band005.obj" name="l_thigh_band005"/>
-        <mesh file="l_thigh_band006.obj" name="l_thigh_band006"/>
-        <mesh file="l_thigh_band007.obj" name="l_thigh_band007"/>
-        <mesh file="l_thigh_band008.obj" name="l_thigh_band008"/>
-        <mesh file="l_thigh_band009.obj" name="l_thigh_band009"/>
         <mesh file="platform.stl" name="platform"/>
     </asset>
 
@@ -34,7 +29,7 @@
             <geom margin="0.001" material="mat_bones" conaffinity="0" contype="0"/>
         </default>
         <default class="exosuit">
-            <geom conaffinity="1" contype="1"/>
+            <geom conaffinity="1" contype="1" material="exosuit"/>
         </default>
         <default class="flexbody">
             <joint armature="0" damping="0" limited="false"/>
@@ -43,6 +38,7 @@
 
     <actuator>
         <position name="platform_act" kp="10000" kv="1000" joint="platform_slide" ctrllimited="true" ctrlrange="0.0175 0.215"/>
+        <motor name="exo_spring" joint="shank_band_knee" ctrllimited="true" ctrlrange="0 20"/>
     </actuator>
 
     <equality>
@@ -145,20 +141,28 @@
                 </body>
 
                 <body name="thigh_band_l" pos="0 0 0" childclass="exosuit">
-                    <joint axis="0 0 1" name="thigh_band_knee" pos="-4.6e-07 -0.404425 0.00126526"/>
+                    <joint axis="0 0 -1" name="thigh_band_knee" pos="-4.6e-07 -0.404425 0.00126526"/>
                     <!-- <geom mesh="l_thigh_band" name="l_thigh_band" type="mesh"/> -->
-                    <geom mesh="l_thigh_band000" type="mesh"/>
-                    <geom mesh="l_thigh_band001" type="mesh"/>
-                    <geom mesh="l_thigh_band002" type="mesh"/>
-                    <geom mesh="l_thigh_band003" type="mesh"/>
-                    <geom mesh="l_thigh_band004" type="mesh"/>
-                    <geom mesh="l_thigh_band005" type="mesh"/>
-                    <geom mesh="l_thigh_band006" type="mesh"/>
-                    <geom mesh="l_thigh_band007" type="mesh"/>
-                    <geom mesh="l_thigh_band008" type="mesh"/>
-                    <geom mesh="l_thigh_band009" type="mesh"/>
-                </body>
+                    <geom type="box" size="0.01 0.1 0.025" pos="-0.085 -0.25 0" euler="0 0 0.2"/>
+                    <geom type="box" size="0.01 0.1 0.025" pos="-0.075 -0.25 0.035" euler="0 0.6 0.2"/>
+                    <geom type="box" size="0.01 0.1 0.025" pos="-0.075 -0.25 -0.035" euler="0 -0.6 0.2"/>
 
+                    <geom type="box" size="0.01 0.1 0.025" pos="0.09 -0.25 -0.01" euler="0 0 -0.05"/>
+                    <geom type="box" size="0.01 0.1 0.025" pos="0.08 -0.25 0.025" euler="0 -0.6 -0.05"/>
+                    <geom type="box" size="0.01 0.1 0.025" pos="0.08 -0.25 -0.045" euler="0 0.6 -0.05"/>
+
+                    <body name="shank_band_l" pos="-4.6e-07 -0.404425 0.00126526">
+                        <joint axis="0 0 -1" name="shank_band_knee" pos="0 0 0"/>
+                        <geom type="box" size="0.01 0.1 0.025" pos="-0.085 -0.2 -0.01" euler="0 0 0.2"/>
+                        <geom type="box" size="0.01 0.1 0.025" pos="-0.075 -0.2 0.025" euler="0 0.6 0.2"/>
+                        <geom type="box" size="0.01 0.1 0.025" pos="-0.075 -0.2 -0.045" euler="0 -0.6 0.2"/>
+
+                        <geom type="box" size="0.01 0.1 0.025" pos="0.05 -0.2 -0.02" euler="0 0 -0.05"/>
+                        <geom type="box" size="0.01 0.1 0.025" pos="0.03 -0.2 0.015" euler="0 -0.6 -0.05"/>
+                        <geom type="box" size="0.01 0.1 0.025" pos="0.03 -0.2 -0.055" euler="0 0.6 -0.05"/>
+                    </body>
+                </body>
+ 
                 <body name="tibia_l" pos="-4.6e-07 -0.404425 0.00126526">
                     <inertial pos="-0.005 -0.175 -0.0025" quat="0.712137 -0.701754 0.0200501 0" mass="3.8" diaginertia="0.0771589 0.0771589 0.00690387" />
                     <joint axis="0 0 -1" name="knee_angle_l" pos="0 0 0" range="0 2.0944"/>
@@ -303,6 +307,6 @@
             </body>
         </body>
 
-        <geom name="ground" type="plane" pos="0 0 0" size="5 5 0.1" rgba="0.8 0.8 0.8 1"/>
+        <!-- <geom name="ground" type="plane" pos="0 0 0" size="5 5 0.1" rgba="0.8 0.8 0.8 1"/> -->
     </worldbody>
 </mujoco>
