@@ -14,7 +14,17 @@
         <mesh file="l_femur_phantom.stl" name="l_femur"/>
         <mesh file="l_tibia_phantom.stl" name="l_tibia"/>
         <mesh file="l_foot_phantom.stl" name="l_foot"/>
-        <mesh file="l_thigh_band.STL" name="l_thigh_band"/>
+        <!-- <mesh file="decomp.stl" name="l_thigh_band"/> -->
+        <mesh file="l_thigh_band000.obj" name="l_thigh_band000"/>
+        <mesh file="l_thigh_band001.obj" name="l_thigh_band001"/>
+        <mesh file="l_thigh_band002.obj" name="l_thigh_band002"/>
+        <mesh file="l_thigh_band003.obj" name="l_thigh_band003"/>
+        <mesh file="l_thigh_band004.obj" name="l_thigh_band004"/>
+        <mesh file="l_thigh_band005.obj" name="l_thigh_band005"/>
+        <mesh file="l_thigh_band006.obj" name="l_thigh_band006"/>
+        <mesh file="l_thigh_band007.obj" name="l_thigh_band007"/>
+        <mesh file="l_thigh_band008.obj" name="l_thigh_band008"/>
+        <mesh file="l_thigh_band009.obj" name="l_thigh_band009"/>
         <mesh file="platform.stl" name="platform"/>
     </asset>
 
@@ -136,7 +146,17 @@
 
                 <body name="thigh_band_l" pos="0 0 0" childclass="exosuit">
                     <joint axis="0 0 1" name="thigh_band_knee" pos="-4.6e-07 -0.404425 0.00126526"/>
-                    <geom mesh="l_thigh_band" name="l_thigh_band" type="mesh"/>
+                    <!-- <geom mesh="l_thigh_band" name="l_thigh_band" type="mesh"/> -->
+                    <geom mesh="l_thigh_band000" type="mesh"/>
+                    <geom mesh="l_thigh_band001" type="mesh"/>
+                    <geom mesh="l_thigh_band002" type="mesh"/>
+                    <geom mesh="l_thigh_band003" type="mesh"/>
+                    <geom mesh="l_thigh_band004" type="mesh"/>
+                    <geom mesh="l_thigh_band005" type="mesh"/>
+                    <geom mesh="l_thigh_band006" type="mesh"/>
+                    <geom mesh="l_thigh_band007" type="mesh"/>
+                    <geom mesh="l_thigh_band008" type="mesh"/>
+                    <geom mesh="l_thigh_band009" type="mesh"/>
                 </body>
 
                 <body name="tibia_l" pos="-4.6e-07 -0.404425 0.00126526">
