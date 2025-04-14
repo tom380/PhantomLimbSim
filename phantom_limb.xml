@@ -12,6 +12,8 @@
     </visual>
 
     <asset>
+        <texture name="skybox" type="skybox" builtin="flat" rgb1="0.8 0.8 0.8" rgb2="0.8 0.8 0.8" width="512" height="512"/>
+
         <material name="mat_bones" rgba="0.2 0.2 0.2 1"/>
         <material name="exosuit" rgba="0.2 0.2 0.2 1"/>
 
@@ -38,7 +40,7 @@
 
     <actuator>
         <position name="platform_act" kp="10000" kv="1000" joint="platform_slide" ctrllimited="true" ctrlrange="0.0175 0.215"/>
-        <motor name="exo_spring" joint="shank_band_knee" ctrllimited="true" ctrlrange="0 20"/>
+        <!-- <motor name="exo_spring" joint="shank_band_knee" ctrllimited="true" ctrlrange="0 200"/> -->
     </actuator>
 
     <equality>
@@ -140,9 +142,9 @@
                     </flexcomp>
                 </body>
 
-                <body name="thigh_band_l" pos="0 0 0" childclass="exosuit">
+                <!-- <body name="thigh_band_l" pos="0 0 0" childclass="exosuit">
                     <joint axis="0 0 -1" name="thigh_band_knee" pos="-4.6e-07 -0.404425 0.00126526"/>
-                    <!-- <geom mesh="l_thigh_band" name="l_thigh_band" type="mesh"/> -->
+                    <geom mesh="l_thigh_band" name="l_thigh_band" type="mesh"/>
                     <geom type="box" size="0.01 0.1 0.025" pos="-0.085 -0.25 0" euler="0 0 0.2"/>
                     <geom type="box" size="0.01 0.1 0.025" pos="-0.075 -0.25 0.035" euler="0 0.6 0.2"/>
                     <geom type="box" size="0.01 0.1 0.025" pos="-0.075 -0.25 -0.035" euler="0 -0.6 0.2"/>
@@ -161,8 +163,8 @@
                         <geom type="box" size="0.01 0.1 0.025" pos="0.03 -0.2 0.015" euler="0 -0.6 -0.05"/>
                         <geom type="box" size="0.01 0.1 0.025" pos="0.03 -0.2 -0.055" euler="0 0.6 -0.05"/>
                     </body>
-                </body>
- 
+                </body> -->
+
                 <body name="tibia_l" pos="-4.6e-07 -0.404425 0.00126526">
                     <inertial pos="-0.005 -0.175 -0.0025" quat="0.712137 -0.701754 0.0200501 0" mass="3.8" diaginertia="0.0771589 0.0771589 0.00690387" />
                     <joint axis="0 0 -1" name="knee_angle_l" pos="0 0 0" range="0 2.0944"/>
