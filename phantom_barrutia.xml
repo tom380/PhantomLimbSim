@@ -3,10 +3,6 @@
 
     <compiler angle="radian" strippath="true" meshdir="meshes/Barrutia/"/>
 
-    <extension>
-        <plugin plugin="mujoco.elasticity.solid"/>
-    </extension>
-
     <visual>
         <map force="0.001"/>
         <scale framelength="0.1" framewidth="0.01"/>
@@ -64,10 +60,7 @@
                     <flexcomp type="gmsh" file="Thigh.msh" radius="0.001" rgba=".9 .7 .0 .3" name="thigh" dim="2" mass="8.1">
                         <contact condim="3" solref="0.01 1" solimp=".95 .99 .0001" selfcollide="none"/>
                         <edge damping="1"/>
-                        <plugin plugin="mujoco.elasticity.solid">
-                            <config key="poisson" value="0.25"/>
-                            <config key="young" value="5e4"/>
-                        </plugin>
+                        <elasticity young="5e4" poisson="0.25"/>
                         <pin id="41"/>
                         <pin id="52"/>
                         <pin id="58"/>
@@ -145,10 +138,7 @@
                         <flexcomp type="gmsh" file="Shank.msh" radius="0.001" rgba=".9 .7 .0 .3" name="l_shank" dim="2" mass="8.1">
                             <contact condim="3" solref="0.01 1" solimp=".95 .99 .0001" selfcollide="none"/>
                             <edge damping="1"/>
-                            <plugin plugin="mujoco.elasticity.solid">
-                                <config key="poisson" value="0.25"/>
-                                <config key="young" value="5e4"/>
-                            </plugin>
+                            <elasticity young="5e4" poisson="0.25"/>
                             <pin id="76"/>
                             <pin id="90"/>
                             <pin id="65"/>
