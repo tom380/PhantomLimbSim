@@ -48,19 +48,20 @@
         </body>
 
         <body name="hip_fixture" pos="0 0 0" childclass="bones">
-            <inertial pos="-0.07 -0.03 0" mass="10.96" diaginertia="0.0622075 0.0532711 0.0299242" />
+            <inertial pos="0.03835 0.07698 0.67989" mass="0.13071" diaginertia="0.00006778 0.00006167 0.00008403" />
             <geom mesh="hip_fixture" name="hip_fixture" type="mesh"/>
 
             <body name="femur" pos="0.03835 0.07698 0.65793">
-                <inertial pos="0 -0.195 0.0005" quat="0.7062 -0.708013 0 0" mass="0.3" diaginertia="0.1694 0.1694 0.0245269" />
+                <inertial pos="0.00457 0.01134 -0.14377" mass="0.24064" xyaxes="-0.11102 0.06309 0.99181 -0.33501 0.93720 -0.09711" diaginertia="0.00005 0.00247 0.00248"/>
                 <joint axis="0 1 0" name="hip_flexion_l" pos="0 0 0" range="-0.523599 2.0944"/>
                 <geom mesh="femur" name="femur" type="mesh"/>
 
                 <body name="thigh" pos="0 0 0" childclass="flexbody">
-                    <flexcomp type="gmsh" file="Thigh.msh" radius="0.001" rgba=".9 .7 .0 .3" name="thigh" dim="2" mass="8.1">
+                    <flexcomp type="gmsh" file="Thigh.msh" rgba=".9 .7 .0 .3" name="thigh" dim="2" mass="22.6449451">
                         <contact condim="3" solref="0.01 1" solimp=".95 .99 .0001" selfcollide="none"/>
                         <edge damping="1"/>
                         <elasticity young="5e4" poisson="0.25"/>
+                        <!-- <elasticity young="6.6e4" poisson="0.48" damping="2.5e-5"/> -->
                         <pin id="56"/>
                         <pin id="43"/>
                         <pin id="30"/>
@@ -250,15 +251,16 @@
                 </body>
 
                 <body name="tibia" pos="-0.00526 0 -0.29865">
-                    <inertial pos="-0.005 -0.175 -0.0025" quat="0.712137 -0.701754 0.0200501 0" mass="3.8" diaginertia="0.0771589 0.0771589 0.00690387" />
+                    <inertial pos="0.00158 0.00259 -0.10784" mass="0.32564" fullinertia="0.00298 0.00298 0.00010 -0.00001 0.00012 -0.00001"/>
                     <joint axis="0 1 0" name="knee_angle_l" pos="0 0 0" range="0 2.0944"/>
                     <geom mesh="tibia" name="tibia" type="mesh"/>
 
                     <body name="shank" pos="0 0 0" childclass="flexbody">
-                        <flexcomp type="gmsh" file="Shank.msh" radius="0.001" rgba=".9 .7 .0 .3" name="l_shank" dim="2" mass="8.1">
+                        <flexcomp type="gmsh" file="Shank.msh" rgba=".9 .7 .0 .3" name="l_shank" dim="2" mass="9.0204033">
                             <contact condim="3" solref="0.01 1" solimp=".95 .99 .0001" selfcollide="none"/>
                             <edge damping="1"/>
                             <elasticity young="5e4" poisson="0.25"/>
+                            <!-- <elasticity young="6.6e4" poisson="0.48" damping="2.5e-5"/> -->
                             <pin id="148"/>
                             <pin id="100"/>
                             <pin id="134"/>
@@ -458,6 +460,7 @@
                     </body>
 
                     <body name="foot" pos="-0.00526 0 -0.30429">
+                        <inertial pos="0 0 -0.03696" mass="0.31095" fullinertia="0.00047 0.00046 0.00078 0 0 0"/>
                         <joint axis="0 1 0" name="ankle_angle_l" pos="0 0 0" range="-0.9 0.9"/>
                         <geom mesh="foot" name="foot" type="mesh"/>
                         <site name="ankle_sensor" pos="0 0 0"/>
