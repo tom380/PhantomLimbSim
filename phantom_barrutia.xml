@@ -44,7 +44,7 @@
 
     <worldbody>
         <body name="platform" pos="0 0 0" childclass="bones" mocap="true">
-            <geom mesh="platform" name="platform" type="mesh" mass="1" pos="0.03835 0.07698 0" quat="0.707107 0.707107 0 0"/>
+            <geom mesh="platform" name="platform" type="mesh" mass="1" pos="0.03835 0.07698 -0.01" quat="0.707107 0.707107 0 0"/>
         </body>
 
         <body name="hip_fixture" pos="0 0 0" childclass="bones">
@@ -250,7 +250,7 @@
                     </flexcomp>
                 </body>
 
-                <body name="tibia" pos="-0.00526 0 -0.29865">
+                <body name="tibia" pos="0.00526 0 -0.29865">
                     <inertial pos="0.00158 0.00259 -0.10784" mass="0.32564" fullinertia="0.00298 0.00298 0.00010 -0.00001 0.00012 -0.00001"/>
                     <joint axis="0 1 0" name="knee_angle_l" pos="0 0 0" range="0 2.0944"/>
                     <geom mesh="tibia" name="tibia" type="mesh"/>
