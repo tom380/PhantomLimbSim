@@ -7,6 +7,7 @@ import mujoco.viewer
 import numpy as np
 import matplotlib.pyplot as plt
 import imageio.v2 as imageio
+import scipy.io as sio
 
 
 # Parameters
@@ -38,13 +39,11 @@ def theoretical_force(theta, theta_dot, theta_ddot):
 
     M = A * k**2 + B * (k + 1)**2 + E * k * (k+1) * np.cos(theta)
 
-
     dM_dtheta = (2 * A * k + 2 * B * (k + 1) + E * (2 * k + 1) * np.cos(theta)) * dk - E * k * (k + 1) * np.sin(theta)
 
     C = 0.5 * dM_dtheta * theta_dot
 
-
-    G = ((MASS_FEMUR * COM_FEMUR + MASS_TIBIA * COM_TIBIA) * LENGTH_TIBIA * k + MASS_TIBIA * COM_TIBIA * LENGTH_FEMUR * (k + 1)) * GRAVITY * np.sin(theta) / D;
+    G = ((MASS_FEMUR * COM_FEMUR + MASS_TIBIA * COM_FEMUR) * LENGTH_TIBIA * k + MASS_TIBIA * COM_TIBIA * LENGTH_FEMUR * (k + 1)) * GRAVITY * np.sin(theta) / D
 
     return (M * theta_ddot + C * theta_dot + G) / (- LENGTH_FEMUR * LENGTH_TIBIA * np.sin(theta) / D)
 
@@ -86,6 +85,7 @@ def main():
     abs_time, gait_pct = [], []
     knee_act, knee_des = [], []
     F_meas, F_theo = [], []
+    theta_dot_log, theta_ddot_log = [], []
 
     with mujoco.viewer.launch_passive(model, data) as viewer:
         while viewer.is_running() and data.time < TOTAL_SIM_TIME:
@@ -112,6 +112,8 @@ def main():
             knee_des.append(math.degrees(theta_des_rad))
             F_meas.append(F_ms)
             F_theo.append(F_th)
+            theta_dot_log.append(theta_dot)
+            theta_ddot_log.append(theta_ddot)
 
             # Display
             viewer.sync()
@@ -147,8 +149,8 @@ def main():
     ax1.set_xlim(0, 1)
 
     ax2 = ax1.twinx()
-    l3, = ax2.plot(gait, F_meas_last, color="tab:green", linestyle="--", label="Measured Force")
-    l4, = ax2.plot(gait, F_theo_last, color="tab:orange", label="Theoretical Force")
+    l3, = ax2.plot(gait, F_meas_last, linestyle="--", label="Measured Force")
+    l4, = ax2.plot(gait, F_theo_last, linestyle="--", label="Theoretical Force")
     ax2.set_ylabel("Force (N)")
 
     ax1.legend(handles=[l1, l2, l3, l4], loc="upper center", ncol=4)
@@ -162,6 +164,20 @@ def main():
         print("Saved run.mp4")
 
     print("Saved simulation_results_last_cycle.png")
+
+    # ---- Save full dataset to MATLAB .mat ----
+    data_dict = {
+        "time": np.asarray(abs_time),
+        "gait_pct": np.asarray(gait_pct),
+        "knee_act": np.asarray(knee_act),
+        "knee_des": np.asarray(knee_des),
+        "F_meas": np.asarray(F_meas),
+        "F_theo": np.asarray(F_theo),
+        "theta_dot": np.asarray(theta_dot_log),
+        "theta_ddot": np.asarray(theta_ddot_log),
+    }
+    sio.savemat("simulation_data.mat", data_dict)
+    print("Saved simulation_data.mat (MATLAB‑compatible)")
 
 
 if __name__ == "__main__":
