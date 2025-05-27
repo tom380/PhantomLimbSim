@@ -27,6 +27,10 @@ GRAVITY         = 9.81              # m/s²
 
 
 def theoretical_force(theta, theta_dot, theta_ddot):
+    theta = np.pi - theta
+    theta_dot = -theta_dot
+    theta_ddot = -theta_ddot
+
     D2 = LENGTH_FEMUR**2 + LENGTH_TIBIA**2 - 2 * LENGTH_FEMUR * LENGTH_TIBIA * np.cos(theta)
     D = np.sqrt(D2)
 
@@ -43,7 +47,7 @@ def theoretical_force(theta, theta_dot, theta_ddot):
 
     C = 0.5 * dM_dtheta * theta_dot
 
-    G = ((MASS_FEMUR * COM_FEMUR + MASS_TIBIA * COM_FEMUR) * LENGTH_TIBIA * k + MASS_TIBIA * COM_TIBIA * LENGTH_FEMUR * (k + 1)) * GRAVITY * np.sin(theta) / D
+    G = ((MASS_FEMUR * COM_FEMUR + MASS_TIBIA * LENGTH_FEMUR) * LENGTH_TIBIA * k + MASS_TIBIA * COM_TIBIA * LENGTH_FEMUR * (k + 1)) * GRAVITY * np.sin(theta) / D
 
     return (M * theta_ddot + C * theta_dot + G) / (- LENGTH_FEMUR * LENGTH_TIBIA * np.sin(theta) / D)
 
@@ -63,7 +67,7 @@ def knee_angle_fourier(t: float) -> float:
 
 def knee2foot(theta_rad: float) -> float:
     return LENGTH_FEMUR + LENGTH_TIBIA - math.sqrt(
-        LENGTH_FEMUR ** 2 + LENGTH_TIBIA ** 2 - 2 * LENGTH_FEMUR * LENGTH_TIBIA * math.cos(math.pi - theta_rad)
+        LENGTH_FEMUR ** 2 + LENGTH_TIBIA ** 2 - 2 * LENGTH_FEMUR * LENGTH_TIBIA * math.cos(math.pi - theta_rad - 0.06) # Add 0.06 rad offset to better match knee angle to profile
     )
 
 
@@ -95,7 +99,7 @@ def main():
 
             # Desired target
             theta_des_rad = math.radians(knee_angle_fourier(data.time))
-            data.mocap_pos[0] = [0.0, 0.0, knee2foot(theta_des_rad)]
+            data.ctrl[model.actuator("platform_act").id] = knee2foot(theta_des_rad)
 
             joint = model.joint("knee_angle_l")
             theta_rad = data.qpos[joint.qposadr[0]]
