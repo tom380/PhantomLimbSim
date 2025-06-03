@@ -91,7 +91,12 @@ def main():
     F_meas, F_theo = [], []
     theta_dot_log, theta_ddot_log = [], []
 
+    # mujoco.viewer.launch(model, data)
+
     with mujoco.viewer.launch_passive(model, data) as viewer:
+        data.qpos[model.joint("knee_angle_l").qposadr[0]] = math.radians(knee_angle_fourier(0))  # Set initial knee angle
+        data.qpos[model.joint("shank_band_knee").qposadr[0]] = math.radians(knee_angle_fourier(0))  # Set initial knee angle
+        data.qpos[model.joint("hip_flexion_l").qposadr[0]] = math.radians(90 - (180 - knee_angle_fourier(0))/2)  # Set initial knee angle
         while viewer.is_running() and data.time < TOTAL_SIM_TIME:
             t0 = time.time()
 
