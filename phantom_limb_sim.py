@@ -91,102 +91,102 @@ def main():
     F_meas, F_theo = [], []
     theta_dot_log, theta_ddot_log = [], []
 
-    # mujoco.viewer.launch(model, data)
+    mujoco.viewer.launch(model, data)
 
-    with mujoco.viewer.launch_passive(model, data) as viewer:
-        data.qpos[model.joint("knee_angle_l").qposadr[0]] = math.radians(knee_angle_fourier(0))  # Set initial knee angle
-        data.qpos[model.joint("shank_band_knee").qposadr[0]] = math.radians(knee_angle_fourier(0))  # Set initial knee angle
-        data.qpos[model.joint("hip_flexion_l").qposadr[0]] = math.radians(90 - (180 - knee_angle_fourier(0))/2)  # Set initial knee angle
-        while viewer.is_running() and data.time < TOTAL_SIM_TIME:
-            t0 = time.time()
+    # with mujoco.viewer.launch_passive(model, data) as viewer:
+    #     data.qpos[model.joint("knee_angle_l").qposadr[0]] = math.radians(knee_angle_fourier(0))  # Set initial knee angle
+    #     data.qpos[model.joint("shank_band_knee").qposadr[0]] = math.radians(knee_angle_fourier(0))  # Set initial knee angle
+    #     data.qpos[model.joint("hip_flexion_l").qposadr[0]] = math.radians(90 - (180 - knee_angle_fourier(0))/2)  # Set initial knee angle
+    #     while viewer.is_running() and data.time < TOTAL_SIM_TIME:
+    #         t0 = time.time()
 
-            mujoco.mj_step(model, data)
+    #         mujoco.mj_step(model, data)
 
-            # Desired target
-            theta_des_rad = math.radians(knee_angle_fourier(data.time))
-            data.ctrl[model.actuator("platform_act").id] = knee2foot(theta_des_rad)
+    #         # Desired target
+    #         theta_des_rad = math.radians(knee_angle_fourier(data.time))
+    #         data.ctrl[model.actuator("platform_act").id] = knee2foot(theta_des_rad)
 
-            joint = model.joint("knee_angle_l")
-            theta_rad = data.qpos[joint.qposadr[0]]
-            theta_dot = data.qvel[joint.dofadr[0]]
-            theta_ddot = data.qacc[joint.dofadr[0]]
+    #         joint = model.joint("knee_angle_l")
+    #         theta_rad = data.qpos[joint.qposadr[0]]
+    #         theta_dot = data.qvel[joint.dofadr[0]]
+    #         theta_ddot = data.qacc[joint.dofadr[0]]
 
-            F_th = theoretical_force(theta_rad, theta_dot, theta_ddot)
-            F_ms = -data.sensordata[2]
+    #         F_th = theoretical_force(theta_rad, theta_dot, theta_ddot)
+    #         F_ms = -data.sensordata[2]
 
-            # Log
-            abs_time.append(data.time)
-            gait_pct.append((data.time % T_CYCLE) / T_CYCLE)
-            knee_act.append(math.degrees(theta_rad))
-            knee_des.append(math.degrees(theta_des_rad))
-            F_meas.append(F_ms)
-            F_theo.append(F_th)
-            theta_dot_log.append(theta_dot)
-            theta_ddot_log.append(theta_ddot)
+    #         # Log
+    #         abs_time.append(data.time)
+    #         gait_pct.append((data.time % T_CYCLE) / T_CYCLE)
+    #         knee_act.append(math.degrees(theta_rad))
+    #         knee_des.append(math.degrees(theta_des_rad))
+    #         F_meas.append(F_ms)
+    #         F_theo.append(F_th)
+    #         theta_dot_log.append(theta_dot)
+    #         theta_ddot_log.append(theta_ddot)
 
-            # Display
-            viewer.sync()
+    #         # Display
+    #         viewer.sync()
 
-            # Update camera
-            if RECORD_VIDEO:
-                renderer.update_scene(data, camera="fixed_cam")
-                frames.append(renderer.render().copy())
+    #         # Update camera
+    #         if RECORD_VIDEO:
+    #             renderer.update_scene(data, camera="fixed_cam")
+    #             frames.append(renderer.render().copy())
 
-            # Calculate time to next step (0 if frame took longer than realtime)
-            dt = model.opt.timestep - (time.time() - t0)
-            if dt > 0:
-                time.sleep(dt)
+    #         # Calculate time to next step (0 if frame took longer than realtime)
+    #         dt = model.opt.timestep - (time.time() - t0)
+    #         if dt > 0:
+    #             time.sleep(dt)
 
-    # ---- Plot last cycle ----
-    abs_np = np.asarray(abs_time)
-    mask = abs_np >= (TOTAL_SIM_TIME - T_CYCLE)
+    # # ---- Plot last cycle ----
+    # abs_np = np.asarray(abs_time)
+    # mask = abs_np >= (TOTAL_SIM_TIME - T_CYCLE)
 
-    gait = np.asarray(gait_pct)[mask]
-    order = np.argsort(gait)
-    gait = gait[order]
+    # gait = np.asarray(gait_pct)[mask]
+    # order = np.argsort(gait)
+    # gait = gait[order]
 
-    knee_act_last = np.asarray(knee_act)[mask][order]
-    knee_des_last = np.asarray(knee_des)[mask][order]
-    F_meas_last = np.asarray(F_meas)[mask][order]
-    F_theo_last = np.asarray(F_theo)[mask][order]
+    # knee_act_last = np.asarray(knee_act)[mask][order]
+    # knee_des_last = np.asarray(knee_des)[mask][order]
+    # F_meas_last = np.asarray(F_meas)[mask][order]
+    # F_theo_last = np.asarray(F_theo)[mask][order]
 
-    fig, ax1 = plt.subplots()
-    l1, = ax1.plot(gait, knee_act_last, label="Actual Knee")
-    l2, = ax1.plot(gait, knee_des_last, label="Desired Knee")
-    ax1.set_xlabel("Gait percentage (cycle‑normalized)")
-    ax1.set_ylabel("Knee angle (deg)")
-    ax1.set_xlim(0, 1)
+    # fig, ax1 = plt.subplots()
+    # l1, = ax1.plot(gait, knee_act_last, label="Actual Knee")
+    # l2, = ax1.plot(gait, knee_des_last, label="Desired Knee")
+    # ax1.set_xlabel("Gait percentage (cycle‑normalized)")
+    # ax1.set_ylabel("Knee angle (deg)")
+    # ax1.set_xlim(0, 1)
 
-    ax2 = ax1.twinx()
-    l3, = ax2.plot(gait, F_meas_last, linestyle="--", label="Measured Force")
-    l4, = ax2.plot(gait, F_theo_last, linestyle="--", label="Theoretical Force")
-    ax2.set_ylabel("Force (N)")
+    # ax2 = ax1.twinx()
+    # l3, = ax2.plot(gait, F_meas_last, linestyle="--", label="Measured Force")
+    # l4, = ax2.plot(gait, F_theo_last, linestyle="--", label="Theoretical Force")
+    # ax2.set_ylabel("Force (N)")
 
-    ax1.legend(handles=[l1, l2, l3, l4], loc="upper center", ncol=4)
-    ax1.grid(True)
-    fig.tight_layout()
-    fig.savefig("simulation_results_last_cycle.png", dpi=300)
-    plt.show()
+    # ax1.legend(handles=[l1, l2, l3, l4], loc="upper center", ncol=4)
+    # ax1.grid(True)
+    # fig.tight_layout()
+    # fig.savefig("simulation_results_last_cycle.png", dpi=300)
+    # plt.show()
 
-    if RECORD_VIDEO:
-        imageio.mimsave("run.mp4", frames, fps=fps, codec="libx264")
-        print("Saved run.mp4")
+    # if RECORD_VIDEO:
+    #     imageio.mimsave("run.mp4", frames, fps=fps, codec="libx264")
+    #     print("Saved run.mp4")
 
-    print("Saved simulation_results_last_cycle.png")
+    # print("Saved simulation_results_last_cycle.png")
 
-    # ---- Save full dataset to MATLAB .mat ----
-    data_dict = {
-        "time": np.asarray(abs_time),
-        "gait_pct": np.asarray(gait_pct),
-        "knee_act": np.asarray(knee_act),
-        "knee_des": np.asarray(knee_des),
-        "F_meas": np.asarray(F_meas),
-        "F_theo": np.asarray(F_theo),
-        "theta_dot": np.asarray(theta_dot_log),
-        "theta_ddot": np.asarray(theta_ddot_log),
-    }
-    sio.savemat("simulation_data.mat", data_dict)
-    print("Saved simulation_data.mat (MATLAB‑compatible)")
+    # # ---- Save full dataset to MATLAB .mat ----
+    # data_dict = {
+    #     "time": np.asarray(abs_time),
+    #     "gait_pct": np.asarray(gait_pct),
+    #     "knee_act": np.asarray(knee_act),
+    #     "knee_des": np.asarray(knee_des),
+    #     "F_meas": np.asarray(F_meas),
+    #     "F_theo": np.asarray(F_theo),
+    #     "theta_dot": np.asarray(theta_dot_log),
+    #     "theta_ddot": np.asarray(theta_ddot_log),
+    # }
+    # sio.savemat("simulation_data.mat", data_dict)
+    # print("Saved simulation_data.mat (MATLAB‑compatible)")
 
 
 if __name__ == "__main__":
