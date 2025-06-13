@@ -22,6 +22,7 @@
         <mesh file="Platform.STL" name="platform"/>
         <mesh file="ThighStrap.STL" name="thigh_strap"/>
         <mesh file="ShankStrap.STL" name="shank_strap"/>
+        <!-- strap meshes generated with generate_mesh_xml.py -->
         <mesh file="ThighStrapCol000.obj" name="thigh_strap_col000"/>
         <mesh file="ThighStrapCol001.obj" name="thigh_strap_col001"/>
         <mesh file="ThighStrapCol002.obj" name="thigh_strap_col002"/>
