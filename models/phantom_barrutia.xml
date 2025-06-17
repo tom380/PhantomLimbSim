@@ -1,7 +1,7 @@
 <mujoco model="phantom_barrutia">
     <option timestep=".0001"/>
 
-    <compiler angle="radian" strippath="true" meshdir="meshes/Barrutia/"/>
+    <compiler angle="radian" strippath="true" meshdir="../meshes/Barrutia/"/>
 
     <visual>
         <map force="0.001"/>
