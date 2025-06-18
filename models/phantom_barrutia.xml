@@ -13,7 +13,7 @@
         <texture name="skybox" type="skybox" builtin="flat" rgb1="0.8 0.8 0.8" rgb2="0.8 0.8 0.8" width="512" height="512"/>
 
         <material name="mat_bones" rgba="0.2 0.2 0.2 1"/>
-        <material name="exosuit" rgba="0.2 0.2 0.2 1"/>
+        <material name="exosuit" rgba="0.2 0.2 0.2 0"/>
 
         <mesh file="Hip Fixture.STL" name="hip_fixture"/>
         <mesh file="Femur.STL" name="femur"/>
@@ -238,10 +238,12 @@
 
     <actuator>
         <position name="platform_act" kp="10000" kv="200" joint="platform_slide"/>
+        <general name="clutch_spring" joint="shank_band_knee" gainprm="20 0" ctrlrange="-1 1"/>
     </actuator>
 
     <sensor>
         <force name="ankle_force" site="ankle_sensor"/>
+        <jointpos joint="shank_band_knee" name="theta_exo"/>
     </sensor>
 
     <worldbody>
@@ -597,9 +599,9 @@
                     <geom mesh="thigh_strap_col126" name="thigh_band_col126" type="mesh" pos="0 0 0" mass="0.001" euler="0 0 0"/>
                     <geom mesh="thigh_strap_col127" name="thigh_band_col127" type="mesh" pos="0 0 0" mass="0.001" euler="0 0 0"/> -->
 
-                    <!-- <body name="thigh_band_vis" pos="0 0 0" childclass="bones">
+                    <body name="thigh_band_vis" pos="0 0 0" childclass="bones">
                         <geom mesh="thigh_strap" name="thigh_band_vis" type="mesh" pos="0 0 0" mass="0.1" euler="0 0 0"/>
-                    </body> -->
+                    </body>
 
                     <body name="shank_band" pos="0 0 0">
                         <joint axis="0 1 0" name="shank_band_knee" pos="0 0 0"/>
@@ -739,9 +741,9 @@
                         <geom mesh="shank_strap_col126" name="shank_band_col126" type="mesh" pos="0 0 0" mass="0.001" euler="0 0 0"/>
                         <geom mesh="shank_strap_col127" name="shank_band_col127" type="mesh" pos="0 0 0" mass="0.001" euler="0 0 0"/> -->
 
-                        <!-- <body name="shank_band_vis" pos="0 0 0" childclass="bones">
+                        <body name="shank_band_vis" pos="0 0 0" childclass="bones">
                             <geom mesh="shank_strap" name="shank_band_vis" type="mesh" pos="0 0 0" mass="0.1" euler="0 0 0"/>
-                        </body> -->
+                        </body>
                     </body>
                 </body>
 

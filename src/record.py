@@ -28,7 +28,7 @@ def plot_last_cycle(logs, output_fn="simulation_results_last_cycle.png"):
     ax2.plot(gait[idx], Ft, "--", label="Theoretical F")
     ax2.set_ylabel("Force (N)")
 
-    ax1.legend(loc="upper center", ncol=4)
+    ax1.legend(loc="upper right")
     ax1.grid(True)
     fig.tight_layout()
     fig.savefig(output_fn, dpi=300)

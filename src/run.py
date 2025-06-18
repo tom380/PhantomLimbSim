@@ -13,6 +13,8 @@ def sim(model_path, record_video=False, record_force=False):
     model = mujoco.MjModel.from_xml_path(model_path)
     data  = mujoco.MjData(model)
 
+    # mujoco.viewer.launch(model, data)
+
     if record_video:
         renderer = mujoco.Renderer(model, 640, 480)
         frames, fps = [], int(round(1 / model.opt.timestep))
@@ -29,7 +31,7 @@ def sim(model_path, record_video=False, record_force=False):
 
         data.qpos[model.joint("knee_angle_l").qposadr[0]] = math.radians(kinematics.knee_angle_fourier(0))  # Set initial knee angle
         data.qpos[model.joint("shank_band_knee").qposadr[0]] = math.radians(kinematics.knee_angle_fourier(0))  # Set initial knee angle
-        data.qpos[model.joint("hip_flexion_l").qposadr[0]] = math.radians(90 - (180 - kinematics.knee_angle_fourier(0))/2)  # Set initial knee angle
+        data.qpos[model.joint("hip_flexion_l").qposadr[0]] = -math.radians(90 - (180 - kinematics.knee_angle_fourier(0))/2)  # Set initial knee angle
 
         while viewer.is_running() and data.time < TOTAL_SIM_TIME:
             t0 = time.time()
@@ -39,6 +41,11 @@ def sim(model_path, record_video=False, record_force=False):
             # Desired target
             theta_des_rad = math.radians(kinematics.knee_angle_fourier(data.time))
             data.ctrl[model.actuator("platform_act").id] = kinematics.knee2foot(theta_des_rad)
+
+            if(data.time % T_CYCLE < T_CYCLE * 0.35):
+                data.ctrl[model.actuator("clutch_spring").id] = math.radians(kinematics.knee_angle_fourier(0))
+            else:
+                data.ctrl[model.actuator("clutch_spring").id] = data.sensordata[1];
 
             if record_force:
                 joint = model.joint("knee_angle_l")

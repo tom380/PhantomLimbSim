@@ -7,7 +7,6 @@ def main():
     # Parse command line arguments
     args = parse_args()
 
-    # mujoco.viewer.launch(model, data)
     logs, (frames, fps) = run.sim(
         model_path=args.model,
         record_video=args.record_video,
