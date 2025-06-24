@@ -8,7 +8,7 @@ def parse_args():
     parser.add_argument(
         "--model",
         type=str,
-        default="../models/phantom_barrutia.xml",
+        default="models/phantom_barrutia.xml",
         help="Path to the MuJoCo model XML file (default: phantom_barrutia.xml)",
     )
 

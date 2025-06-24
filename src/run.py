@@ -5,12 +5,14 @@ import mujoco, mujoco.viewer
 from config import TOTAL_SIM_TIME, T_CYCLE
 import kinematics
 import dynamics
+import xmlparser
 
 def sim(model_path, record_video=False, record_force=False):
     if not Path(model_path).exists():
         raise FileNotFoundError(model_path)
 
-    model = mujoco.MjModel.from_xml_path(model_path)
+    model_string = xmlparser.parse(model_path)
+    model = mujoco.MjModel.from_xml_string(model_string)
     data  = mujoco.MjData(model)
 
     # mujoco.viewer.launch(model, data)
