@@ -2,6 +2,9 @@ import xml.etree.ElementTree as ET
 import glob
 import os
 import re
+import meshio
+import trimesh
+import numpy as np
 
 def find_all(name, path, ext=None, split=False):
     """
@@ -135,11 +138,59 @@ def expand_geoms(tree, splits):
                 for offset, ng in enumerate(new_geoms):
                     parent.insert(idx + offset, ng)
 
+def findpins(surfacemesh, flex):
+    msh = meshio.read(flex)
+    points = msh.points
+
+    surface = trimesh.load(surfacemesh, force='mesh')
+    distances = trimesh.proximity.signed_distance(surface, points)
+
+    tol = 8e-3
+    mask = np.abs(distances) < tol
+
+    ids = np.nonzero(mask)[0]
+
+    return ids
+
+#TODO Take translation of mesh into account
+def flexpin(tree):
+    root = tree.getroot()
+
+    compiler = root.find('compiler')
+    meshdir = compiler.get('meshdir', '')
+
+    asset = root.find('.//asset')
+    mesh_lookup = {}
+    if asset is not None:
+        for m in asset.findall('mesh'):
+            name = m.get('name')
+            file = m.get('file')
+            if name and file:
+                mesh_lookup[name] = file
+
+    for flex in root.findall('.//flexcomp'):
+        flex_file = flex.get('file', '')
+
+        for pinmesh in list(flex.findall('pinmesh')):
+            mesh_name = pinmesh.get('mesh')
+            mesh_file = mesh_lookup.get(mesh_name)
+            if mesh_file is None:
+                raise KeyError(f"Mesh '{mesh_name}' not found in <asset>")
+
+            pin_ids = findpins(os.path.join(meshdir, mesh_file), os.path.join(meshdir, flex_file))
+
+            idx = list(flex).index(pinmesh)
+            flex.remove(pinmesh)
+            for offset, pid in enumerate(pin_ids):
+                pin = ET.Element('pin', {'id': str(pid)})
+                flex.insert(idx + offset, pin)
+
 def parse(filepath):
     tree = ET.parse(filepath)
     root = tree.getroot()
     splits = meshfinder(tree)
     expand_geoms(tree, splits)
+    flexpin(tree)
 
     return ET.tostring(root, encoding='unicode',xml_declaration=True)
 
@@ -161,6 +212,7 @@ if __name__ == '__main__':
     tree = ET.parse(filepath)
     splits = meshfinder(tree)
     expand_geoms(tree, splits)
+    flexpin(tree)
 
     root = tree.getroot()
     indent(root)
