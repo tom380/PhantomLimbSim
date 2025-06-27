@@ -9,6 +9,7 @@ def main():
 
     logs, (frames, fps) = run.sim(
         model_path=args.model,
+        actuated= not args.unactuated,
         record_video=args.record_video,
         record_force=args.record_force
     )

@@ -7,7 +7,7 @@ import kinematics
 import dynamics
 import xmlparser
 
-def sim(model_path, record_video=False, record_force=False):
+def sim(model_path, actuated=True, record_video=False, record_force=False):
     if not Path(model_path).exists():
         raise FileNotFoundError(model_path)
 
@@ -15,70 +15,73 @@ def sim(model_path, record_video=False, record_force=False):
     model = mujoco.MjModel.from_xml_string(model_string)
     data  = mujoco.MjData(model)
 
-    # mujoco.viewer.launch(model, data)
+    if not actuated:
+        mujoco.viewer.launch(model, data)
+        return None, (None, None)
 
-    if record_video:
-        renderer = mujoco.Renderer(model, 640, 480)
-        frames, fps = [], int(round(1 / model.opt.timestep))
+    else:
+        if record_video:
+            renderer = mujoco.Renderer(model, 640, 480)
+            frames, fps = [], int(round(1 / model.opt.timestep))
 
-    if record_force:
-        logs = {
-        "time": [], "gait": [],
-        "knee_act": [], "knee_des": [],
-        "F_meas": [], "F_theo": [],
-        "theta_dot": [], "theta_ddot": []
-        }
+        if record_force:
+            logs = {
+            "time": [], "gait": [],
+            "knee_act": [], "knee_des": [],
+            "F_meas": [], "F_theo": [],
+            "theta_dot": [], "theta_ddot": []
+            }
 
-    with mujoco.viewer.launch_passive(model, data) as viewer:
+        with mujoco.viewer.launch_passive(model, data) as viewer:
 
-        data.qpos[model.joint("knee_angle_l").qposadr[0]] = math.radians(kinematics.knee_angle_fourier(0))  # Set initial knee angle
-        data.qpos[model.joint("shank_band_knee").qposadr[0]] = math.radians(kinematics.knee_angle_fourier(0))  # Set initial knee angle
-        data.qpos[model.joint("hip_flexion_l").qposadr[0]] = -math.radians(90 - (180 - kinematics.knee_angle_fourier(0))/2)  # Set initial knee angle
+            data.qpos[model.joint("knee_angle_l").qposadr[0]] = math.radians(kinematics.knee_angle_fourier(0))  # Set initial knee angle
+            data.qpos[model.joint("shank_band_knee").qposadr[0]] = math.radians(kinematics.knee_angle_fourier(0))  # Set initial knee angle
+            data.qpos[model.joint("hip_flexion_l").qposadr[0]] = -math.radians(90 - (180 - kinematics.knee_angle_fourier(0))/2)  # Set initial knee angle
 
-        while viewer.is_running() and data.time < TOTAL_SIM_TIME:
-            t0 = time.time()
+            while viewer.is_running() and data.time < TOTAL_SIM_TIME:
+                t0 = time.time()
 
-            mujoco.mj_step(model, data)
+                mujoco.mj_step(model, data)
 
-            # Desired target
-            theta_des_rad = math.radians(kinematics.knee_angle_fourier(data.time))
-            data.ctrl[model.actuator("platform_act").id] = kinematics.knee2foot(theta_des_rad)
+                # Desired target
+                theta_des_rad = math.radians(kinematics.knee_angle_fourier(data.time))
+                data.ctrl[model.actuator("platform_act").id] = kinematics.knee2foot(theta_des_rad)
 
-            if(data.time % T_CYCLE < T_CYCLE * 0.35):
-                data.ctrl[model.actuator("clutch_spring").id] = math.radians(kinematics.knee_angle_fourier(0))
-            else:
-                data.ctrl[model.actuator("clutch_spring").id] = data.sensordata[1];
+                if(data.time % T_CYCLE < T_CYCLE * 0.35):
+                    data.ctrl[model.actuator("clutch_spring").id] = math.radians(kinematics.knee_angle_fourier(0))
+                else:
+                    data.ctrl[model.actuator("clutch_spring").id] = data.sensordata[1];
 
-            if record_force:
-                joint = model.joint("knee_angle_l")
-                theta_rad = data.qpos[joint.qposadr[0]]
-                theta_dot = data.qvel[joint.dofadr[0]]
-                theta_ddot = data.qacc[joint.dofadr[0]]
+                if record_force:
+                    joint = model.joint("knee_angle_l")
+                    theta_rad = data.qpos[joint.qposadr[0]]
+                    theta_dot = data.qvel[joint.dofadr[0]]
+                    theta_ddot = data.qacc[joint.dofadr[0]]
 
-                F_th = dynamics.theoretical_force(theta_rad, theta_dot, theta_ddot)
-                F_ms = -data.sensordata[2]
+                    F_th = dynamics.theoretical_force(theta_rad, theta_dot, theta_ddot)
+                    F_ms = -data.sensordata[2]
 
-                # Log
-                logs["time"].append(data.time)
-                logs["gait"].append((data.time % T_CYCLE) / T_CYCLE)
-                logs["knee_act"].append(math.degrees(theta_rad))
-                logs["knee_des"].append(math.degrees(theta_des_rad))
-                logs["F_meas"].append(F_ms)
-                logs["F_theo"].append(F_th)
-                logs["theta_dot"].append(theta_dot)
-                logs["theta_ddot"].append(theta_ddot)
+                    # Log
+                    logs["time"].append(data.time)
+                    logs["gait"].append((data.time % T_CYCLE) / T_CYCLE)
+                    logs["knee_act"].append(math.degrees(theta_rad))
+                    logs["knee_des"].append(math.degrees(theta_des_rad))
+                    logs["F_meas"].append(F_ms)
+                    logs["F_theo"].append(F_th)
+                    logs["theta_dot"].append(theta_dot)
+                    logs["theta_ddot"].append(theta_ddot)
 
-            # Display
-            viewer.sync()
+                # Display
+                viewer.sync()
 
-            # Update camera
-            if record_video:
-                renderer.update_scene(data, camera="fixed_cam")
-                frames.append(renderer.render().copy())
+                # Update camera
+                if record_video:
+                    renderer.update_scene(data, camera="fixed_cam")
+                    frames.append(renderer.render().copy())
 
-            # Calculate time to next step (0 if frame took longer than realtime)
-            dt = model.opt.timestep - (time.time() - t0)
-            if dt > 0:
-                time.sleep(dt)
+                # Calculate time to next step (0 if frame took longer than realtime)
+                dt = model.opt.timestep - (time.time() - t0)
+                if dt > 0:
+                    time.sleep(dt)
 
-    return logs if record_force else None, (frames, fps) if record_video else (None, None)
+        return logs if record_force else None, (frames, fps) if record_video else (None, None)

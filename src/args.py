@@ -13,6 +13,12 @@ def parse_args():
     )
 
     parser.add_argument(
+        "--unactuated",
+        action="store_true",
+        help="Use active viewer without actuation",
+    )
+
+    parser.add_argument(
         "--record-video",
         action="store_true",
         help="Record the simulation as a video (default: False)",
