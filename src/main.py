@@ -17,12 +17,12 @@ def main():
     ## TODO: File save location and names should be configurable
     if args.record_force:
         # ---- Plot last cycle ----
-        record.plot_last_cycle(logs, "../outputs/simulation_results_last_cycle.png")
+        record.plot_last_cycle(logs, "outputs/simulation_results_last_cycle.png")
         # ---- Save full dataset to MATLAB .mat ----
-        record.save_mat(logs, "../outputs/simulation_data.mat")
+        record.save_mat(logs, "outputs/simulation_data.mat")
 
     if args.record_video:
-        record.save_video(frames, fps, "../outputs/run.mp4")
+        record.save_video(frames, fps, "outputs/run.mp4")
 
 
 if __name__ == "__main__":

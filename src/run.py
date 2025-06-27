@@ -6,6 +6,7 @@ from config import TOTAL_SIM_TIME, T_CYCLE
 import kinematics
 import dynamics
 import xmlparser
+import numpy as np
 
 def sim(model_path, actuated=True, record_video=False, record_force=False):
     if not Path(model_path).exists():
@@ -22,7 +23,9 @@ def sim(model_path, actuated=True, record_video=False, record_force=False):
     else:
         if record_video:
             renderer = mujoco.Renderer(model, 640, 480)
-            frames, fps = [], int(round(1 / model.opt.timestep))
+            target_fps = 60
+            tpf = np.floor(1/(target_fps * model.opt.timestep))
+            frames, fps = [], 1/(tpf*model.opt.timestep)
 
         if record_force:
             logs = {
@@ -76,8 +79,9 @@ def sim(model_path, actuated=True, record_video=False, record_force=False):
 
                 # Update camera
                 if record_video:
-                    renderer.update_scene(data, camera="fixed_cam")
-                    frames.append(renderer.render().copy())
+                    if int(data.time / model.opt.timestep) % tpf == 0:
+                        renderer.update_scene(data, camera="fixed_cam")
+                        frames.append(renderer.render().copy())
 
                 # Calculate time to next step (0 if frame took longer than realtime)
                 dt = model.opt.timestep - (time.time() - t0)
