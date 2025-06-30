@@ -42,12 +42,14 @@
     </default>
 
     <equality>
-        <weld body1="foot" body2="platform" torquescale="1000"/>
+        <!-- <weld body1="foot" body2="platform" torquescale="1000" solref="0.004 50000" solimp="0.9 0.95 0.001"/> -->
+        <weld body1="foot" body2="platform" torquescale="1000" solref="-100000 -2000" solimp="0.95 0.99 0.0001"/>
+        <!-- <weld body1="foot" body2="platform" torquescale="1000"/> -->
     </equality>
 
     <actuator>
-        <position name="platform_act" kp="10000" kv="200" joint="platform_slide"/>
-        <general name="clutch_spring" joint="shank_band_knee" gainprm="20 0" ctrlrange="-1 1"/>
+        <!-- <position name="platform_act" kp="10000" kv="200" joint="platform_slide"/> -->
+        <position name="clutch_spring" joint="shank_band_knee" kp="20"/>
     </actuator>
 
     <sensor>
@@ -61,8 +63,8 @@
         <!-- <camera name="fixed_cam" mode="fixed" pos="-0.066 -0.097 0.523" xyaxes="0.705 -0.709 0.000 0.083 0.083 0.993"/> -->
 
 
-        <body name="platform" pos="0 0 0" childclass="bones" mocap="false">
-            <joint type="slide" axis="0 0 1" name="platform_slide" range="-2.5 2.5"/>
+        <body name="platform" pos="0 0 0" childclass="bones" mocap="true">
+            <!-- <joint type="slide" axis="0 0 1" name="platform_slide" range="-2.5 2.5"/> -->
             <geom mesh="platform" name="platform" type="mesh" mass="1" pos="0.03835 0.07698 -0.01" quat="0.707107 0.707107 0 0"/>
         </body>
 
@@ -86,18 +88,18 @@
 
                 <body name="thigh_band" pos="0.00526 0 -0.29865" childclass="exosuit">
                     <joint axis="0 1 0" name="thigh_band_knee" pos="0 0 0"/>
-                    <geom mesh="thigh_strap_col" name="thigh_band_col" type="mesh" pos="0 0 0" mass="1" euler="0 0 0"/>
+                    <geom mesh="thigh_strap_col" name="thigh_band_col" type="mesh" pos="0 0 0" mass="0.1" euler="0 0 0"/>
 
                     <body name="thigh_band_vis" pos="0 0 0" childclass="bones">
-                        <geom mesh="thigh_strap" name="thigh_band_vis" type="mesh" pos="0 0 0" mass="0.1" euler="0 0 0"/>
+                        <geom mesh="thigh_strap" name="thigh_band_vis" type="mesh" pos="0 0 0" mass="0" euler="0 0 0"/>
                     </body>
 
                     <body name="shank_band" pos="0 0 0">
                         <joint axis="0 1 0" name="shank_band_knee" pos="0 0 0"/>
-                        <geom mesh="shank_strap_col" name="shank_band_col" type="mesh" pos="0 0 0" mass="1" euler="0 0 0"/>
+                        <geom mesh="shank_strap_col" name="shank_band_col" type="mesh" pos="0 0 0" mass="0.1" euler="0 0 0"/>
 
                         <body name="shank_band_vis" pos="0 0 0" childclass="bones">
-                            <geom mesh="shank_strap" name="shank_band_vis" type="mesh" pos="0 0 0" mass="0.1" euler="0 0 0"/>
+                            <geom mesh="shank_strap" name="shank_band_vis" type="mesh" pos="0 0 0" mass="0" euler="0 0 0"/>
                         </body>
                     </body>
                 </body>

@@ -12,8 +12,15 @@ def knee_angle_fourier(t: float) -> float:
     )
     return theta
 
+def D(theta_rad: float) -> float:
+    theta = np.pi - theta_rad
+    return np.sqrt(LENGTH_FEMUR ** 2 + LENGTH_TIBIA ** 2 - 2 * LENGTH_FEMUR * LENGTH_TIBIA * np.cos(theta))
 
 def knee2foot(theta_rad: float) -> float:
-    return LENGTH_FEMUR + LENGTH_TIBIA - math.sqrt(
-        LENGTH_FEMUR ** 2 + LENGTH_TIBIA ** 2 - 2 * LENGTH_FEMUR * LENGTH_TIBIA * math.cos(math.pi - theta_rad - 0.06) # Add 0.06 rad offset to better match knee angle to profile
-    )
+    return LENGTH_FEMUR + LENGTH_TIBIA - D(theta_rad)
+
+def knee2hip(theta_rad: float) -> float:
+    return -np.asin(LENGTH_TIBIA * np.sin(np.pi - theta_rad) / D(theta_rad))
+
+def knee2ankle(theta_rad: float) -> float:
+    return -np.asin(LENGTH_FEMUR * np.sin(np.pi - theta_rad) / D(theta_rad))

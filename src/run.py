@@ -36,11 +36,18 @@ def sim(model_path, actuated=True, record_video=False, record_force=False):
             }
 
         with mujoco.viewer.launch_passive(model, data) as viewer:
+            knee_0 = math.radians(kinematics.knee_angle_fourier(0))
+            data.qpos[model.joint("knee_angle_l").qposadr[0]] = knee_0  # Set initial knee angle
+            data.qpos[model.joint("shank_band_knee").qposadr[0]] = knee_0  # Set initial knee angle
+            data.qpos[model.joint("hip_flexion_l").qposadr[0]] = kinematics.knee2hip(knee_0)  # Set initial knee angle
+            data.qpos[model.joint("ankle_angle_l").qposadr[0]] = kinematics.knee2ankle(knee_0)  # Set initial ankle angle
 
-            data.qpos[model.joint("knee_angle_l").qposadr[0]] = math.radians(kinematics.knee_angle_fourier(0))  # Set initial knee angle
-            data.qpos[model.joint("shank_band_knee").qposadr[0]] = math.radians(kinematics.knee_angle_fourier(0))  # Set initial knee angle
-            data.qpos[model.joint("hip_flexion_l").qposadr[0]] = -math.radians(90 - (180 - kinematics.knee_angle_fourier(0))/2)  # Set initial knee angle
+            data.mocap_pos[0] = [0, 0, kinematics.knee2foot(knee_0) + 0.0028]
 
+            clutch_id = model.actuator("clutch_spring").id
+            data.ctrl[clutch_id] = math.radians(kinematics.knee_angle_fourier(0))
+            clutch_gainprm = model.actuator_gainprm[clutch_id]
+            clutch_biasprm = model.actuator_biasprm[clutch_id]
             while viewer.is_running() and data.time < TOTAL_SIM_TIME:
                 t0 = time.time()
 
@@ -48,12 +55,24 @@ def sim(model_path, actuated=True, record_video=False, record_force=False):
 
                 # Desired target
                 theta_des_rad = math.radians(kinematics.knee_angle_fourier(data.time))
-                data.ctrl[model.actuator("platform_act").id] = kinematics.knee2foot(theta_des_rad)
+                # data.ctrl[model.actuator("platform_act").id] = kinematics.knee2foot(theta_des_rad) + 0.0028
+                data.mocap_pos[0] = [0, 0, kinematics.knee2foot(theta_des_rad) + 0.0028]
 
-                if(data.time % T_CYCLE < T_CYCLE * 0.35):
-                    data.ctrl[model.actuator("clutch_spring").id] = math.radians(kinematics.knee_angle_fourier(0))
-                else:
-                    data.ctrl[model.actuator("clutch_spring").id] = data.sensordata[1];
+
+                if not hasattr(sim, "prev_engaged"):
+                    sim.prev_engaged = None
+
+                engaged = (data.time % T_CYCLE < T_CYCLE * 0.35)
+                if engaged != sim.prev_engaged:
+                    if engaged:
+                        print("Engage")
+                        model.actuator_gainprm[clutch_id] = clutch_gainprm
+                        model.actuator_biasprm[clutch_id] = clutch_biasprm
+                    else:
+                        print("Disengage")
+                        model.actuator_gainprm[clutch_id] = 0
+                        model.actuator_biasprm[clutch_id] = 0
+                    sim.prev_engaged = engaged
 
                 if record_force:
                     joint = model.joint("knee_angle_l")
