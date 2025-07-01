@@ -22,6 +22,7 @@
         <mesh file="Platform.STL" name="platform"/>
         <mesh file="ThighStrap.STL" name="thigh_strap"/>
         <mesh file="ShankStrap.STL" name="shank_strap"/>
+        <mesh file="Thigh.STL" name="thigh"/>
         <meshfinder>
             <mesh name="ThighStrapCol" alias="thigh_strap_col" split="true"/>
             <mesh name="ShankStrapCol" alias="shank_strap_col" split="true"/>
@@ -78,12 +79,13 @@
                 <geom mesh="femur" name="femur" type="mesh"/>
 
                 <body name="thigh" pos="0 0 0" childclass="flexbody">
-                    <flexcomp type="gmsh" file="Thigh.msh" rgba=".9 .7 .0 .3" name="thigh" dim="2" mass="2.26449451">
+                    <flexcomp type="gmsh" file="Thigh.msh" rgba=".9 .7 .0 .3" name="thigh" dim="2" radius="0" mass="2.26449451">
                         <contact condim="3" solref="0.01 1" solimp=".95 .99 .0001" selfcollide="none"/>
                         <edge damping="1"/>
                         <elasticity young="6.6e4" poisson="0.48" damping="2.5e-5"/>
                         <pinmesh mesh="femur"/>
                     </flexcomp>
+                    <geom mesh="thigh" name="thigh_check" type="mesh"/>
                 </body>
 
                 <body name="thigh_band" pos="0.00526 0 -0.29865" childclass="exosuit">
@@ -110,7 +112,7 @@
                     <geom mesh="tibia" name="tibia" type="mesh"/>
 
                     <body name="shank" pos="0 0 0" childclass="flexbody">
-                        <flexcomp type="gmsh" file="Shank.msh" rgba=".9 .7 .0 .3" name="l_shank" dim="2" mass="0.90204033">
+                        <flexcomp type="gmsh" file="Shank.msh" rgba=".9 .7 .0 .3" name="l_shank" dim="2" radius="0" mass="0.90204033">
                             <contact condim="3" solref="0.01 1" solimp=".95 .99 .0001" selfcollide="none"/>
                             <edge damping="1"/>
                             <elasticity young="6.6e4" poisson="0.48" damping="2.5e-5"/>
