@@ -22,7 +22,6 @@
         <mesh file="Platform.STL" name="platform"/>
         <mesh file="ThighStrap.STL" name="thigh_strap"/>
         <mesh file="ShankStrap.STL" name="shank_strap"/>
-        <mesh file="Thigh.STL" name="thigh"/>
         <meshfinder>
             <mesh name="ThighStrapCol" alias="thigh_strap_col" split="true"/>
             <mesh name="ShankStrapCol" alias="shank_strap_col" split="true"/>
@@ -85,7 +84,6 @@
                         <elasticity young="6.6e4" poisson="0.48" damping="2.5e-5"/>
                         <pinmesh mesh="femur"/>
                     </flexcomp>
-                    <geom mesh="thigh" name="thigh_check" type="mesh"/>
                 </body>
 
                 <body name="thigh_band" pos="0.00526 0 -0.29865" childclass="exosuit">
