@@ -23,7 +23,7 @@ def sim(model_path, actuated=True, record_video=False, record_force=False):
     else:
         if record_video:
             renderer = mujoco.Renderer(model, 640, 480)
-            target_fps = 60
+            target_fps = 120
             tpf = np.floor(1/(target_fps * model.opt.timestep))
             frames, fps = [], 1/(tpf*model.opt.timestep)
 

@@ -88,7 +88,7 @@
 
                 <body name="thigh_band" pos="0.00526 0 -0.29865" childclass="exosuit">
                     <joint axis="0 1 0" name="thigh_band_knee" pos="0 0 0"/>
-                    <geom mesh="thigh_strap_col" name="thigh_band_col" type="mesh" pos="0 0 0" mass="0.1" euler="0 0 0"/>
+                    <geom mesh="thigh_strap_col" name="thigh_band_col" type="mesh" pos="0 0 0" mass="0.635" euler="0 0 0"/>
 
                     <body name="thigh_band_vis" pos="0 0 0" childclass="bones">
                         <geom mesh="thigh_strap" name="thigh_band_vis" type="mesh" pos="0 0 0" mass="0" euler="0 0 0"/>
@@ -96,7 +96,7 @@
 
                     <body name="shank_band" pos="0 0 0">
                         <joint axis="0 1 0" name="shank_band_knee" pos="0 0 0"/>
-                        <geom mesh="shank_strap_col" name="shank_band_col" type="mesh" pos="0 0 0" mass="0.1" euler="0 0 0"/>
+                        <geom mesh="shank_strap_col" name="shank_band_col" type="mesh" pos="0 0 0" mass="0.388" euler="0 0 0"/>
 
                         <body name="shank_band_vis" pos="0 0 0" childclass="bones">
                             <geom mesh="shank_strap" name="shank_band_vis" type="mesh" pos="0 0 0" mass="0" euler="0 0 0"/>
