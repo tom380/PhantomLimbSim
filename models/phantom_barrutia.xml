@@ -1,5 +1,5 @@
 <mujoco model="phantom_barrutia">
-    <option timestep=".0001"/>
+    <option timestep=".0002"/>
 
     <compiler angle="radian" strippath="true" meshdir="meshes/Barrutia/"/>
 
@@ -48,13 +48,13 @@
     </equality>
 
     <actuator>
-        <!-- <position name="platform_act" kp="10000" kv="200" joint="platform_slide"/> -->
+        <position name="knee_actuator" kp="10000" kv="200" joint="knee_angle"/>
         <position name="clutch_spring" joint="shank_band_knee" kp="20"/>
     </actuator>
 
     <sensor>
-        <force name="ankle_force" site="ankle_sensor"/>
-        <jointpos joint="shank_band_knee" name="theta_exo"/>
+        <torque name="knee_moment" site="knee_sensor"/>
+        <jointvel name="knee_joint_vel" joint="knee_angle"/>
     </sensor>
 
     <worldbody>
@@ -63,9 +63,9 @@
         <!-- <camera name="fixed_cam" mode="fixed" pos="-0.066 -0.097 0.523" xyaxes="0.705 -0.709 0.000 0.083 0.083 0.993"/> -->
 
 
-        <body name="platform" pos="0 0 0" childclass="bones" mocap="true">
-            <!-- <joint type="slide" axis="0 0 1" name="platform_slide" range="-2.5 2.5"/> -->
-            <geom mesh="platform" name="platform" type="mesh" mass="1" pos="0.03835 0.07698 -0.01" quat="0.707107 0.707107 0 0"/>
+        <body name="platform" pos="0 0 0" childclass="bones" mocap="false">
+            <joint type="slide" axis="0 0 1" name="platform_slide" range="-2.5 2.5"/>
+            <geom mesh="platform" name="platform" type="mesh" mass="0.01" pos="0.03835 0.07698 -0.01" quat="0.707107 0.707107 0 0"/>
         </body>
 
         <body name="hip_fixture" pos="0 0 0" childclass="bones">
@@ -74,7 +74,7 @@
 
             <body name="femur" pos="0.03835 0.07698 0.65793">
                 <inertial pos="0.00457 0.01134 -0.14377" mass="0.24064" xyaxes="-0.11102 0.06309 0.99181 -0.33501 0.93720 -0.09711" diaginertia="0.00005 0.00247 0.00248"/>
-                <joint axis="0 1 0" name="hip_flexion_l" pos="0 0 0" range="-0.523599 2.0944"/>
+                <joint axis="0 1 0" name="hip_flexion" pos="0 0 0" range="-0.523599 2.0944"/>
                 <geom mesh="femur" name="femur" type="mesh"/>
 
                 <body name="thigh" pos="0 0 0" childclass="flexbody">
@@ -106,7 +106,8 @@
 
                 <body name="tibia" pos="0.00526 0 -0.29865">
                     <inertial pos="0.00158 0.00259 -0.10784" mass="0.32564" fullinertia="0.00298 0.00298 0.00010 -0.00001 0.00012 -0.00001"/>
-                    <joint axis="0 1 0" name="knee_angle_l" pos="0 0 0" range="0 3.0944"/>
+                    <joint axis="0 1 0" name="knee_angle" pos="0 0 0" range="0 3.0944"/>
+                    <site name="knee_sensor" pos="0 0 0"/>
                     <geom mesh="tibia" name="tibia" type="mesh"/>
 
                     <body name="shank" pos="0 0 0" childclass="flexbody">
@@ -120,9 +121,8 @@
 
                     <body name="foot" pos="-0.00526 0 -0.30429">
                         <inertial pos="0 0 -0.03696" mass="0.31095" fullinertia="0.00047 0.00046 0.00078 0 0 0"/>
-                        <joint axis="0 1 0" name="ankle_angle_l" pos="0 0 0" range="-0.9 0.9"/>
+                        <joint axis="0 1 0" name="ankle_angle" pos="0 0 0" range="-0.9 0.9"/>
                         <geom mesh="foot" name="foot" type="mesh"/>
-                        <site name="ankle_sensor" pos="0 0 0"/>
                     </body>
                 </body>
             </body>

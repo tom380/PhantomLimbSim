@@ -37,12 +37,10 @@ def sim(model_path, actuated=True, record_video=False, record_force=False):
 
         with mujoco.viewer.launch_passive(model, data) as viewer:
             knee_0 = math.radians(kinematics.knee_angle_fourier(0))
-            data.qpos[model.joint("knee_angle_l").qposadr[0]] = knee_0  # Set initial knee angle
+            data.qpos[model.joint("knee_angle").qposadr[0]] = knee_0  # Set initial knee angle
             data.qpos[model.joint("shank_band_knee").qposadr[0]] = knee_0  # Set initial knee angle
-            data.qpos[model.joint("hip_flexion_l").qposadr[0]] = kinematics.knee2hip(knee_0)  # Set initial knee angle
-            data.qpos[model.joint("ankle_angle_l").qposadr[0]] = kinematics.knee2ankle(knee_0)  # Set initial ankle angle
-
-            data.mocap_pos[0] = [0, 0, kinematics.knee2foot(knee_0) + 0.0028]
+            data.qpos[model.joint("hip_flexion").qposadr[0]] = kinematics.knee2hip(knee_0)  # Set initial knee angle
+            data.qpos[model.joint("ankle_angle").qposadr[0]] = kinematics.knee2ankle(knee_0)  # Set initial ankle angle
 
             clutch_id = model.actuator("clutch_spring").id
             data.ctrl[clutch_id] = math.radians(kinematics.knee_angle_fourier(0))
@@ -55,8 +53,7 @@ def sim(model_path, actuated=True, record_video=False, record_force=False):
 
                 # Desired target
                 theta_des_rad = math.radians(kinematics.knee_angle_fourier(data.time))
-                # data.ctrl[model.actuator("platform_act").id] = kinematics.knee2foot(theta_des_rad) + 0.0028
-                data.mocap_pos[0] = [0, 0, kinematics.knee2foot(theta_des_rad) + 0.0028]
+                data.ctrl[model.actuator("knee_actuator").id] = theta_des_rad
 
 
                 if not hasattr(sim, "prev_engaged"):
@@ -75,13 +72,14 @@ def sim(model_path, actuated=True, record_video=False, record_force=False):
                     sim.prev_engaged = engaged
 
                 if record_force:
-                    joint = model.joint("knee_angle_l")
+                    joint = model.joint("knee_angle")
                     theta_rad = data.qpos[joint.qposadr[0]]
                     theta_dot = data.qvel[joint.dofadr[0]]
                     theta_ddot = data.qacc[joint.dofadr[0]]
 
-                    F_th = dynamics.theoretical_force(theta_rad, theta_dot, theta_ddot)
-                    F_ms = -data.sensordata[2]
+                    torque = data.joint("knee_angle").qfrc_constraint + data.joint("knee_angle").qfrc_smooth
+                    F_th = torque[0]
+                    F_ms = data.sensordata[1]
 
                     # Log
                     logs["time"].append(data.time)
