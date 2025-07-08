@@ -35,7 +35,8 @@ def sim(model_path, actuated=True, record_video=False, record_force=False):
             "knee_act": [], "knee_des": [],
             "moment": [],
             "phantom_theta": [], "phantom_omega": [], "phantom_alpha": [],
-            "exo_theta": [], "exo_omega": [], "exo_alpha": []
+            "exo_theta": [], "exo_omega": [], "exo_alpha": [],
+            "spring_moment": [], "spring_length": []
             }
 
         with mujoco.viewer.launch_passive(model, data) as viewer:
@@ -78,7 +79,11 @@ def sim(model_path, actuated=True, record_video=False, record_force=False):
                     phantom_knee = model.joint("knee_angle")
                     exo_knee = model.joint("shank_band_knee")
 
-                    torque = data.joint("knee_angle").qfrc_applied - data.joint("knee_angle").qfrc_constraint
+                    torque = data.joint("knee_angle").qfrc_inverse - data.joint("knee_angle").qfrc_constraint
+                    spring_torque = -data.actuator_force[model.actuator("clutch_spring").id]
+
+                    exo_theta = data.qpos[exo_knee.qposadr[0]]
+                    spring_length = (exo_theta - data.ctrl[clutch_id]) if engaged else 0
 
                     # Log
                     logs["time"].append(data.time)
@@ -87,9 +92,11 @@ def sim(model_path, actuated=True, record_video=False, record_force=False):
                     logs["phantom_theta"].append(data.qpos[phantom_knee.qposadr[0]])
                     logs["phantom_omega"].append(data.qvel[phantom_knee.dofadr[0]])
                     logs["phantom_alpha"].append(data.qacc[phantom_knee.dofadr[0]])
-                    logs["exo_theta"].append(data.qpos[exo_knee.qposadr[0]])
+                    logs["exo_theta"].append(exo_theta)
                     logs["exo_omega"].append(data.qvel[exo_knee.dofadr[0]])
                     logs["exo_alpha"].append(data.qacc[exo_knee.dofadr[0]])
+                    logs["spring_moment"].append(spring_torque)
+                    logs["spring_length"].append(spring_length)
 
                 # Display
                 viewer.sync()
