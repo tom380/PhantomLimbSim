@@ -31,8 +31,9 @@ def sim(model_path, actuated=True, record_video=False, record_force=False):
             logs = {
             "time": [], "gait": [],
             "knee_act": [], "knee_des": [],
-            "F_meas": [], "F_theo": [],
-            "theta_dot": [], "theta_ddot": []
+            "moment": [],
+            "phantom_theta": [], "phantom_omega": [], "phantom_alpha": [],
+            "exo_theta": [], "exo_omega": [], "exo_alpha": []
             }
 
         with mujoco.viewer.launch_passive(model, data) as viewer:
@@ -44,8 +45,8 @@ def sim(model_path, actuated=True, record_video=False, record_force=False):
 
             clutch_id = model.actuator("clutch_spring").id
             data.ctrl[clutch_id] = math.radians(kinematics.knee_angle_fourier(0))
-            clutch_gainprm = model.actuator_gainprm[clutch_id]
-            clutch_biasprm = model.actuator_biasprm[clutch_id]
+            clutch_gainprm = model.actuator_gainprm[clutch_id].copy()
+            clutch_biasprm = model.actuator_biasprm[clutch_id].copy()
             while viewer.is_running() and data.time < TOTAL_SIM_TIME:
                 t0 = time.time()
 
@@ -72,24 +73,21 @@ def sim(model_path, actuated=True, record_video=False, record_force=False):
                     sim.prev_engaged = engaged
 
                 if record_force:
-                    joint = model.joint("knee_angle")
-                    theta_rad = data.qpos[joint.qposadr[0]]
-                    theta_dot = data.qvel[joint.dofadr[0]]
-                    theta_ddot = data.qacc[joint.dofadr[0]]
+                    phantom_knee = model.joint("knee_angle")
+                    exo_knee = model.joint("shank_band_knee")
 
-                    torque = data.joint("knee_angle").qfrc_constraint + data.joint("knee_angle").qfrc_smooth
-                    F_th = torque[0]
-                    F_ms = data.sensordata[1]
+                    torque = data.joint("knee_angle").qfrc_applied - data.joint("knee_angle").qfrc_constraint
 
                     # Log
                     logs["time"].append(data.time)
                     logs["gait"].append((data.time % T_CYCLE) / T_CYCLE)
-                    logs["knee_act"].append(math.degrees(theta_rad))
-                    logs["knee_des"].append(math.degrees(theta_des_rad))
-                    logs["F_meas"].append(F_ms)
-                    logs["F_theo"].append(F_th)
-                    logs["theta_dot"].append(theta_dot)
-                    logs["theta_ddot"].append(theta_ddot)
+                    logs["moment"].append(torque)
+                    logs["phantom_theta"].append(data.qpos[phantom_knee.qposadr[0]])
+                    logs["phantom_omega"].append(data.qvel[phantom_knee.dofadr[0]])
+                    logs["phantom_alpha"].append(data.qacc[phantom_knee.dofadr[0]])
+                    logs["exo_theta"].append(data.qpos[exo_knee.qposadr[0]])
+                    logs["exo_omega"].append(data.qvel[exo_knee.dofadr[0]])
+                    logs["exo_alpha"].append(data.qacc[exo_knee.dofadr[0]])
 
                 # Display
                 viewer.sync()

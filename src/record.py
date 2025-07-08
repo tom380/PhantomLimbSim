@@ -11,24 +11,23 @@ def plot_last_cycle(logs, output_fn="simulation_results_last_cycle.png"):
     gait = np.array(logs["gait"])[mask]
     idx  = np.argsort(gait)
 
-    knee_a = np.array(logs["knee_act"])[mask][idx]
-    knee_d = np.array(logs["knee_des"])[mask][idx]
-    Fm     = np.array(logs["F_meas"])[mask][idx]
-    Ft     = np.array(logs["F_theo"])[mask][idx]
+    knee_a = np.array(logs["phantom_theta"])[mask][idx]
+    knee_e = np.array(logs["exo_theta"])[mask][idx]
+    moment     = np.array(logs["moment"])[mask][idx]
 
     fig, ax1 = plt.subplots()
-    ax1.plot(gait[idx], knee_a, label="Actual Knee")
-    ax1.plot(gait[idx], knee_d, label="Desired Knee")
+    ax1.plot(gait[idx], knee_a, label="Knee angle")
+    ax1.plot(gait[idx], knee_e, label="Exo angle")
     ax1.set_xlabel("Gait %")
-    ax1.set_ylabel("Knee angle (°)")
+    ax1.set_ylabel("Knee angle (rad)")
     ax1.set_xlim(0,1)
 
     ax2 = ax1.twinx()
-    ax2.plot(gait[idx], Fm, "--", label="Measured F")
-    ax2.plot(gait[idx], Ft, "--", label="Theoretical F")
-    ax2.set_ylabel("Force (N)")
+    ax2.plot(gait[idx], moment, label="Moment", color='green')
+    ax2.set_ylabel("Moment (Nm)")
 
-    ax1.legend(loc="upper right")
+    ax1.legend(loc='upper left')
+    ax2.legend(loc='upper right')
     ax1.grid(True)
     fig.tight_layout()
     fig.savefig(output_fn, dpi=300)
