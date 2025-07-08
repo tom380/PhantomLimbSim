@@ -23,6 +23,8 @@ def sim(model_path, actuated=True, record_video=False, record_force=False):
     else:
         if record_video:
             renderer = mujoco.Renderer(model, 640, 480)
+            opt_scene = mujoco.MjvOption()
+            opt_scene.flags[mujoco.mjtVisFlag.mjVIS_CONTACTFORCE] = True
             target_fps = 120
             tpf = np.floor(1/(target_fps * model.opt.timestep))
             frames, fps = [], 1/(tpf*model.opt.timestep)
@@ -95,7 +97,7 @@ def sim(model_path, actuated=True, record_video=False, record_force=False):
                 # Update camera
                 if record_video:
                     if int(data.time / model.opt.timestep) % tpf == 0:
-                        renderer.update_scene(data, camera="fixed_cam")
+                        renderer.update_scene(data, camera="fixed_cam", scene_option=opt_scene)
                         frames.append(renderer.render().copy())
 
                 # Calculate time to next step (0 if frame took longer than realtime)
