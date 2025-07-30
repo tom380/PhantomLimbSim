@@ -13,6 +13,12 @@ def parse_args():
     )
 
     parser.add_argument(
+        "--output",
+        type=str,
+        help="Output path and name",
+    )
+
+    parser.add_argument(
         "--unactuated",
         action="store_true",
         help="Use active viewer without actuation",

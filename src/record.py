@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 
 from config import T_CYCLE, TOTAL_SIM_TIME
 
-def plot_last_cycle(logs, output_fn="simulation_results_last_cycle.png"):
+def plot_last_cycle(logs, output_fn="simulation_results_last_cycle"):
     t    = np.array(logs["time"])
     mask = t >= (TOTAL_SIM_TIME - T_CYCLE)
     gait = np.array(logs["gait"])[mask]
@@ -32,15 +32,15 @@ def plot_last_cycle(logs, output_fn="simulation_results_last_cycle.png"):
     ax2.legend(loc='upper right')
     ax1.grid(True)
     fig.tight_layout()
-    fig.savefig(output_fn, dpi=300)
+    fig.savefig(output_fn + ".png", dpi=300)
     plt.show()
-    print("Saved" + output_fn)
+    print("Saved" + output_fn + ".png")
 
-def save_video(frames, fps, fn="run.mp4"):
-    imageio.mimsave(fn, frames, fps=fps, codec="libx264")
-    print("Saved " + fn)
+def save_video(frames, fps, fn="run"):
+    imageio.mimsave(fn + ".mp4", frames, fps=fps, codec="libx264")
+    print("Saved " + fn + ".mp4")
 
-def save_mat(logs, fn="simulation_data.mat"):
+def save_mat(logs, fn="simulation_data"):
     data = {k: np.asarray(v) for k,v in logs.items()}
-    sio.savemat(fn, data)
-    print("Saved"+ fn + " (MATLAB‑compatible)")
+    sio.savemat(fn + ".mat", data)
+    print("Saved"+ fn + ".mat" + " (MATLAB‑compatible)")
