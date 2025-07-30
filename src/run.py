@@ -23,6 +23,8 @@ def sim(model_path, actuated=True, record_video=False, record_force=False):
     else:
         if record_video:
             renderer = mujoco.Renderer(model, 640, 480)
+            opt_scene = mujoco.MjvOption()
+            opt_scene.flags[mujoco.mjtVisFlag.mjVIS_CONTACTFORCE] = True
             target_fps = 120
             tpf = np.floor(1/(target_fps * model.opt.timestep))
             frames, fps = [], 1/(tpf*model.opt.timestep)
@@ -30,10 +32,10 @@ def sim(model_path, actuated=True, record_video=False, record_force=False):
         if record_force:
             logs = {
             "time": [], "gait": [],
-            "knee_act": [], "knee_des": [],
             "moment": [],
             "phantom_theta": [], "phantom_omega": [], "phantom_alpha": [],
-            "exo_theta": [], "exo_omega": [], "exo_alpha": []
+            "exo_theta": [], "exo_omega": [], "exo_alpha": [],
+            "spring_moment": [], "spring_length": []
             }
 
         with mujoco.viewer.launch_passive(model, data) as viewer:
@@ -77,6 +79,10 @@ def sim(model_path, actuated=True, record_video=False, record_force=False):
                     exo_knee = model.joint("shank_band_knee")
 
                     torque = data.actuator_force[model.actuator("knee_actuator").id]
+                    spring_torque = -data.actuator_force[model.actuator("clutch_spring").id]
+
+                    exo_theta = data.qpos[exo_knee.qposadr[0]]
+                    spring_length = (exo_theta - data.ctrl[clutch_id]) if engaged else 0
 
                     # Log
                     logs["time"].append(data.time)
@@ -85,9 +91,11 @@ def sim(model_path, actuated=True, record_video=False, record_force=False):
                     logs["phantom_theta"].append(data.qpos[phantom_knee.qposadr[0]])
                     logs["phantom_omega"].append(data.qvel[phantom_knee.dofadr[0]])
                     logs["phantom_alpha"].append(data.qacc[phantom_knee.dofadr[0]])
-                    logs["exo_theta"].append(data.qpos[exo_knee.qposadr[0]])
+                    logs["exo_theta"].append(exo_theta)
                     logs["exo_omega"].append(data.qvel[exo_knee.dofadr[0]])
                     logs["exo_alpha"].append(data.qacc[exo_knee.dofadr[0]])
+                    logs["spring_moment"].append(spring_torque)
+                    logs["spring_length"].append(spring_length)
 
                 # Display
                 viewer.sync()
@@ -95,7 +103,7 @@ def sim(model_path, actuated=True, record_video=False, record_force=False):
                 # Update camera
                 if record_video:
                     if int(data.time / model.opt.timestep) % tpf == 0:
-                        renderer.update_scene(data, camera="fixed_cam")
+                        renderer.update_scene(data, camera="fixed_cam", scene_option=opt_scene)
                         frames.append(renderer.render().copy())
 
                 # Calculate time to next step (0 if frame took longer than realtime)
