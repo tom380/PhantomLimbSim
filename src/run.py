@@ -76,7 +76,7 @@ def sim(model_path, actuated=True, record_video=False, record_force=False):
                     phantom_knee = model.joint("knee_angle")
                     exo_knee = model.joint("shank_band_knee")
 
-                    torque = data.joint("knee_angle").qfrc_applied - data.joint("knee_angle").qfrc_constraint
+                    torque = data.actuator_force[model.actuator("knee_actuator").id]
 
                     # Log
                     logs["time"].append(data.time)
