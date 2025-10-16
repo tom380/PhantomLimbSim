@@ -34,7 +34,7 @@ def sim(model_path, actuated=True, record_video=False, record_force=False):
             "time": [], "gait": [],
             "moment": [],
             "phantom_theta": [], "phantom_omega": [], "phantom_alpha": [],
-            "exo_theta": [], "exo_omega": [], "exo_alpha": [],
+            "exo_theta": [], "exo_omega": [], "exo_alpha": [], "exo_moment": [],
             "spring_moment": [], "spring_length": []
             }
 
@@ -80,6 +80,8 @@ def sim(model_path, actuated=True, record_video=False, record_force=False):
 
                     torque = data.actuator_force[model.actuator("knee_actuator").id]
                     spring_torque = -data.actuator_force[model.actuator("clutch_spring").id]
+                    i = exo_knee.dofadr[0]
+                    exo_torque = data.qfrc_bias[i] - data.qfrc_actuator[i]
 
                     exo_theta = data.qpos[exo_knee.qposadr[0]]
                     spring_length = (exo_theta - data.ctrl[clutch_id]) if engaged else 0
@@ -94,6 +96,7 @@ def sim(model_path, actuated=True, record_video=False, record_force=False):
                     logs["exo_theta"].append(exo_theta)
                     logs["exo_omega"].append(data.qvel[exo_knee.dofadr[0]])
                     logs["exo_alpha"].append(data.qacc[exo_knee.dofadr[0]])
+                    logs["exo_moment"].append(exo_torque)
                     logs["spring_moment"].append(spring_torque)
                     logs["spring_length"].append(spring_length)
 

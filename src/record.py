@@ -14,7 +14,7 @@ def plot_last_cycle(logs, output_fn="simulation_results_last_cycle"):
     knee_a = np.array(logs["phantom_theta"])[mask][idx]
     knee_e = np.array(logs["exo_theta"])[mask][idx]
     moment = np.array(logs["moment"])[mask][idx]
-    moment_spring = np.array(logs["spring_moment"])[mask][idx]
+    moment_exo = np.array(logs["exo_moment"])[mask][idx]
 
     fig, ax1 = plt.subplots()
     ax1.plot(gait[idx], knee_a, label="Knee angle")
@@ -24,8 +24,8 @@ def plot_last_cycle(logs, output_fn="simulation_results_last_cycle"):
     ax1.set_xlim(0,1)
 
     ax2 = ax1.twinx()
-    ax2.plot(gait[idx], moment, label="Moment", color='green')
-    ax2.plot(gait[idx], moment_spring, label="Moment Spring", color='red')
+    ax2.plot(gait[idx], moment, label="Moment Platform", color='green')
+    ax2.plot(gait[idx], moment_exo, label="Moment Exo", color='red')
     ax2.set_ylabel("Moment (Nm)")
 
     ax1.legend(loc='upper left')
