@@ -7,6 +7,7 @@ import kinematics
 import dynamics
 import xmlparser
 import numpy as np
+from progress_display import SimulationProgress
 
 def sim(model_path, actuated=True, record_video=False, record_force=False):
     if not Path(model_path).exists():
@@ -49,10 +50,23 @@ def sim(model_path, actuated=True, record_video=False, record_force=False):
             data.ctrl[clutch_id] = math.radians(kinematics.knee_angle_fourier(0))
             clutch_gainprm = model.actuator_gainprm[clutch_id].copy()
             clutch_biasprm = model.actuator_biasprm[clutch_id].copy()
+            progress = SimulationProgress(TOTAL_SIM_TIME, model.opt.timestep)
+
+            def compute_gait_state(current_time: float):
+                gait_phase = (current_time % T_CYCLE) / T_CYCLE if T_CYCLE else 0.0
+                phase_label = "stance" if gait_phase < 0.6 else "swing"
+                return gait_phase, phase_label
+
+            progress.start()
+            step_count = 0
+            gait_phase, phase_label = compute_gait_state(data.time)
+            progress.update(data.time, step_count, gait_phase, phase_label, None)
+            last_step_duration = None
             while viewer.is_running() and data.time < TOTAL_SIM_TIME:
-                t0 = time.time()
+                iteration_start = time.perf_counter()
 
                 mujoco.mj_step(model, data)
+                step_count += 1
 
                 # Desired target
                 theta_des_rad = math.radians(kinematics.knee_angle_fourier(data.time))
@@ -65,11 +79,9 @@ def sim(model_path, actuated=True, record_video=False, record_force=False):
                 engaged = (data.time % T_CYCLE < T_CYCLE * 0.35)
                 if engaged != sim.prev_engaged:
                     if engaged:
-                        print("Engage")
                         model.actuator_gainprm[clutch_id] = clutch_gainprm
                         model.actuator_biasprm[clutch_id] = clutch_biasprm
                     else:
-                        print("Disengage")
                         model.actuator_gainprm[clutch_id] = 0
                         model.actuator_biasprm[clutch_id] = 0
                     sim.prev_engaged = engaged
@@ -102,6 +114,9 @@ def sim(model_path, actuated=True, record_video=False, record_force=False):
 
                 # Display
                 viewer.sync()
+                last_step_duration = time.perf_counter() - iteration_start
+                gait_phase, phase_label = compute_gait_state(data.time)
+                progress.update(data.time, step_count, gait_phase, phase_label, last_step_duration)
 
                 # Update camera
                 if record_video:
@@ -110,8 +125,11 @@ def sim(model_path, actuated=True, record_video=False, record_force=False):
                         frames.append(renderer.render().copy())
 
                 # Calculate time to next step (0 if frame took longer than realtime)
-                dt = model.opt.timestep - (time.time() - t0)
+                loop_duration = time.perf_counter() - iteration_start
+                dt = model.opt.timestep - loop_duration
                 if dt > 0:
                     time.sleep(dt)
+            gait_phase, phase_label = compute_gait_state(data.time)
+            progress.finish(data.time, step_count, gait_phase, phase_label, last_step_duration)
 
         return logs if record_force else None, (frames, fps) if record_video else (None, None)
