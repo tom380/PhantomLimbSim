@@ -21,15 +21,15 @@ class SimulationProgress:
         if self.start_time is not None:
             return
         self.start_time = time.perf_counter()
-        legend_lines = [
-            "Progress bar fields:",
-            "  |####| -> simulation time progress",
-            "  [curr/total] -> completed timesteps",
-            "  t= -> wall-clock runtime since start",
-            "  gait= -> gait cycle percentage and phase",
-            "  step= -> compute time per iteration (excl. sleep)",
-        ]
-        print("\n".join(legend_lines))
+        # legend_lines = [
+        #     "Progress bar fields:",
+        #     "  |####| -> simulation time progress",
+        #     "  [curr/total] -> completed timesteps",
+        #     "  t= -> wall-clock runtime since start",
+        #     "  gait= -> gait cycle percentage and phase",
+        #     "  step= -> compute time per iteration (excl. sleep)",
+        # ]
+        # print("\n".join(legend_lines))
 
     def _format_elapsed(self, seconds):
         minutes = int(seconds // 60)

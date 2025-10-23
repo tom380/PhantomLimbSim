@@ -35,8 +35,10 @@ def sim(model_path, actuated=True, record_video=False, record_force=False):
             "time": [], "gait": [],
             "moment": [],
             "phantom_theta": [], "phantom_omega": [], "phantom_alpha": [],
-            "exo_theta": [], "exo_omega": [], "exo_alpha": [], "exo_moment": [],
-            "spring_moment": [], "spring_length": []
+            "exo_theta": [], "exo_omega": [], "exo_alpha": [], "exo_moment": [], "exo_constraint": [],
+            "spring_moment": [], "spring_length": [],
+            "moment_applied": [], "moment_bias": [], "moment_spring": [], "moment_damper": [], "moment_gravcomp": [], "moment_fluid": [], "moment_passive": [], "moment_actuator": [], "moment_smooth": [], "moment_constraint": [], "moment_inverse": [],
+            "exo_applied": [], "exo_bias": [], "exo_spring": [], "exo_damper": [], "exo_gravcomp": [], "exo_fluid": [], "exo_passive": [], "exo_actuator": [], "exo_smooth": [], "exo_constraint": [], "exo_inverse": []
             }
 
         with mujoco.viewer.launch_passive(model, data) as viewer:
@@ -91,9 +93,42 @@ def sim(model_path, actuated=True, record_video=False, record_force=False):
                     exo_knee = model.joint("shank_band_knee")
 
                     torque = data.actuator_force[model.actuator("knee_actuator").id]
+                    # Control
+                    torque_applied = data.qfrc_applied[phantom_knee.dofadr[0]] # Applied generalized force
+                    # Computed by mj_fwdVelocity/mj_rne (without acceleration)
+                    torque_bias = data.qfrc_bias[phantom_knee.dofadr[0]] # C(qpos,qvel)
+                    # Computed by mj_fwdVelocity/mj_passive
+                    torque_spring = data.qfrc_spring[phantom_knee.dofadr[0]] # Passive spring force
+                    torque_damper = data.qfrc_damper[phantom_knee.dofadr[0]] # Passive damper force
+                    torque_gravcomp = data.qfrc_gravcomp[phantom_knee.dofadr[0]] # Passive gravity compensation force
+                    torque_fluid = data.qfrc_fluid[phantom_knee.dofadr[0]] # Passive fluid force
+                    torque_passive = data.qfrc_passive[phantom_knee.dofadr[0]] # Total passive force
+                    # Computed by mj_fwdActuation
+                    torque_actuator = data.qfrc_actuator[phantom_knee.dofadr[0]] # Actuator force
+                    # Computed by mj_fwdAcceleration
+                    torque_smooth = data.qfrc_smooth[phantom_knee.dofadr[0]] # Net unconstrained force
+                    # Computed by mj_fwdConstraint/mj_inverse
+                    torque_constraint = data.qfrc_constraint[phantom_knee.dofadr[0]] # Constraint force
+                    # Computed by mj_inverse
+                    torque_inverse = data.qfrc_inverse[phantom_knee.dofadr[0]] # Net external force; should equal: qfrc_applied + J'*xfrc_applied + qfrc_actuator
+
+
+                    exo_applied = data.qfrc_applied[exo_knee.dofadr[0]]
+                    exo_bias = data.qfrc_bias[exo_knee.dofadr[0]]
+                    exo_spring = data.qfrc_spring[exo_knee.dofadr[0]]
+                    exo_damper = data.qfrc_damper[exo_knee.dofadr[0]]
+                    exo_gravcomp = data.qfrc_gravcomp[exo_knee.dofadr[0]]
+                    exo_fluid = data.qfrc_fluid[exo_knee.dofadr[0]]
+                    exo_passive = data.qfrc_passive[exo_knee.dofadr[0]]
+                    exo_actuator = data.qfrc_actuator[exo_knee.dofadr[0]]
+                    exo_smooth = data.qfrc_smooth[exo_knee.dofadr[0]]
+                    exo_constraint = data.qfrc_constraint[exo_knee.dofadr[0]]
+                    exo_inverse = data.qfrc_inverse[exo_knee.dofadr[0]]
+
+
                     spring_torque = -data.actuator_force[model.actuator("clutch_spring").id]
                     i = exo_knee.dofadr[0]
-                    exo_torque = data.qfrc_bias[i] - data.qfrc_actuator[i]
+                    exo_torque = data.qfrc_constraint[exo_knee.dofadr[0]]
 
                     exo_theta = data.qpos[exo_knee.qposadr[0]]
                     spring_length = (exo_theta - data.ctrl[clutch_id]) if engaged else 0
@@ -111,6 +146,29 @@ def sim(model_path, actuated=True, record_video=False, record_force=False):
                     logs["exo_moment"].append(exo_torque)
                     logs["spring_moment"].append(spring_torque)
                     logs["spring_length"].append(spring_length)
+                    logs["moment_applied"].append(torque_applied)
+                    logs["moment_bias"].append(torque_bias)
+                    logs["moment_spring"].append(torque_spring)
+                    logs["moment_damper"].append(torque_damper)
+                    logs["moment_gravcomp"].append(torque_gravcomp)
+                    logs["moment_fluid"].append(torque_fluid)
+                    logs["moment_passive"].append(torque_passive)
+                    logs["moment_actuator"].append(torque_actuator)
+                    logs["moment_smooth"].append(torque_smooth)
+                    logs["moment_constraint"].append(torque_constraint)
+                    logs["moment_inverse"].append(torque_inverse)
+                    logs["exo_applied"].append(exo_applied)
+                    logs["exo_bias"].append(exo_bias)
+                    logs["exo_spring"].append(exo_spring)
+                    logs["exo_damper"].append(exo_damper)
+                    logs["exo_gravcomp"].append(exo_gravcomp)
+                    logs["exo_fluid"].append(exo_fluid)
+                    logs["exo_passive"].append(exo_passive)
+                    logs["exo_actuator"].append(exo_actuator)
+                    logs["exo_smooth"].append(exo_smooth)
+                    logs["exo_constraint"].append(exo_constraint)
+                    logs["exo_inverse"].append(exo_inverse)
+
 
                 # Display
                 viewer.sync()
