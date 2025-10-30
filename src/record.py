@@ -3,29 +3,31 @@ import scipy.io as sio
 import numpy as np
 import matplotlib.pyplot as plt
 
-from config import T_CYCLE, TOTAL_SIM_TIME
-
 def plot_last_cycle(logs, output_fn="simulation_results_last_cycle"):
-    t    = np.array(logs["time"])
-    mask = t >= (TOTAL_SIM_TIME - T_CYCLE)
-    gait = np.array(logs["gait"])[mask]
-    idx  = np.argsort(gait)
+    gait = np.array(logs["gait"])
+    if gait.size == 0:
+        raise ValueError("No gait data available in logs.")
 
-    knee_a = np.array(logs["phantom_theta"])[mask][idx]
-    knee_e = np.array(logs["exo_theta"])[mask][idx]
-    moment = np.array(logs["moment"])[mask][idx]
-    moment_exo = np.array(logs["exo_moment"])[mask][idx]
+    resets = np.where(np.diff(gait) < -0.5)[0]
+    start_idx = int(resets[-1] + 1) if resets.size else 0
+    gait_segment = gait[start_idx:]
+    idx = np.argsort(gait_segment)
+
+    knee_a = np.array(logs["phantom_theta"])[start_idx:][idx]
+    knee_e = np.array(logs["exo_theta"])[start_idx:][idx]
+    moment = np.array(logs["moment"])[start_idx:][idx]
+    moment_exo = np.array(logs["exo_moment"])[start_idx:][idx]
 
     fig, ax1 = plt.subplots()
-    ax1.plot(gait[idx], knee_a, label="Knee angle")
-    ax1.plot(gait[idx], knee_e, label="Exo angle")
+    ax1.plot(gait_segment[idx], knee_a, label="Knee angle")
+    ax1.plot(gait_segment[idx], knee_e, label="Exo angle")
     ax1.set_xlabel("Gait %")
     ax1.set_ylabel("Knee angle (rad)")
     ax1.set_xlim(0,1)
 
     ax2 = ax1.twinx()
-    ax2.plot(gait[idx], moment, label="Moment Platform", color='green')
-    ax2.plot(gait[idx], moment_exo, label="Moment Exo", color='red')
+    ax2.plot(gait_segment[idx], moment, label="Moment Platform", color='green')
+    ax2.plot(gait_segment[idx], moment_exo, label="Moment Exo", color='red')
     ax2.set_ylabel("Moment (Nm)")
 
     ax1.legend(loc='upper left')

@@ -11,7 +11,10 @@ def main():
         model_path=args.model,
         actuated= not args.unactuated,
         record_video=args.record_video,
-        record_force=args.record_force
+        record_force=args.record_force,
+        kinematics_mode=args.kinematics,
+        spring_index=args.spring_index,
+        sim_time=args.sim_time,
     )
 
     ## TODO: File save location and names should be configurable

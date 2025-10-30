@@ -36,4 +36,26 @@ def parse_args():
         help="Record the force measurements during the simulation (default: False)",
     )
 
+    parser.add_argument(
+        "--kinematics",
+        choices=("average", "full"),
+        default="average",
+        help="Select the kinematics source: average gait cycle or full recorded dataset (default: average).",
+    )
+
+    parser.add_argument(
+        "--spring-index",
+        type=int,
+        choices=range(1, 7),
+        default=3,
+        help="Choose the exosuit spring dataset (1-6) and corresponding stiffness (default: 3).",
+    )
+
+    parser.add_argument(
+        "--sim-time",
+        type=float,
+        default=None,
+        help="Simulation time in seconds (default: configuration value). Use 0 with '--kinematics full' to run the entire dataset.",
+    )
+
     return parser.parse_args()

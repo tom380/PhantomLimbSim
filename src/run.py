@@ -1,21 +1,56 @@
 import time
-import math
 from pathlib import Path
-import mujoco, mujoco.viewer
-from config import TOTAL_SIM_TIME, T_CYCLE
-import kinematics
-import dynamics
-import xmlparser
+
+import mujoco
+import mujoco.viewer
 import numpy as np
+
+from config import TOTAL_SIM_TIME
+import kinematics
+import xmlparser
 from progress_display import SimulationProgress
 
-def sim(model_path, actuated=True, record_video=False, record_force=False):
+
+def sim(
+    model_path,
+    actuated=True,
+    record_video=False,
+    record_force=False,
+    kinematics_mode="average",
+    spring_index=3,
+    sim_time=None,
+):
     if not Path(model_path).exists():
         raise FileNotFoundError(model_path)
 
     model_string = xmlparser.parse(model_path)
     model = mujoco.MjModel.from_xml_string(model_string)
-    data  = mujoco.MjData(model)
+    data = mujoco.MjData(model)
+
+    profile = kinematics.get_kinematics_profile(kinematics_mode, spring_index)
+
+    default_time = profile.dataset_duration if profile.mode == "full" else TOTAL_SIM_TIME
+    target_time = default_time
+
+    if sim_time is not None:
+        if sim_time <= 0:
+            target_time = profile.dataset_duration if profile.dataset_duration is not None else default_time
+        else:
+            target_time = sim_time
+
+    if profile.dataset_duration is not None:
+        dataset_time = profile.dataset_duration
+        if dataset_time is None or dataset_time <= 0:
+            dataset_time = 0.0
+        if target_time is None or target_time <= 0:
+            target_time = dataset_time
+        else:
+            target_time = min(target_time, dataset_time) if dataset_time > 0 else target_time
+
+    if target_time is None or target_time <= 0:
+        target_time = TOTAL_SIM_TIME
+
+    target_time = float(target_time) if target_time is not None else None
 
     if not actuated:
         mujoco.viewer.launch(model, data)
@@ -42,107 +77,117 @@ def sim(model_path, actuated=True, record_video=False, record_force=False):
             }
 
         with mujoco.viewer.launch_passive(model, data) as viewer:
-            knee_0 = math.radians(kinematics.knee_angle_fourier(0))
-            data.qpos[model.joint("knee_angle").qposadr[0]] = knee_0  # Set initial knee angle
-            data.qpos[model.joint("shank_band_knee").qposadr[0]] = knee_0  # Set initial knee angle
-            data.qpos[model.joint("hip_flexion").qposadr[0]] = kinematics.knee2hip(knee_0)  # Set initial knee angle
-            data.qpos[model.joint("ankle_angle").qposadr[0]] = kinematics.knee2ankle(knee_0)  # Set initial ankle angle
+            knee_joint = model.joint("knee_angle")
+            exo_joint = model.joint("shank_band_knee")
+            hip_joint = model.joint("hip_flexion")
+            ankle_joint = model.joint("ankle_angle")
 
+            knee_actuator_id = model.actuator("knee_actuator").id
             clutch_id = model.actuator("clutch_spring").id
-            data.ctrl[clutch_id] = math.radians(kinematics.knee_angle_fourier(0))
+
+            knee_0 = profile.initial_knee_angle_rad
+            data.qpos[knee_joint.qposadr[0]] = knee_0
+            data.qpos[exo_joint.qposadr[0]] = knee_0
+            data.qpos[hip_joint.qposadr[0]] = kinematics.knee2hip(knee_0)
+            data.qpos[ankle_joint.qposadr[0]] = kinematics.knee2ankle(knee_0)
+
+            data.ctrl[knee_actuator_id] = knee_0
+            data.ctrl[clutch_id] = knee_0
+
             clutch_gainprm = model.actuator_gainprm[clutch_id].copy()
             clutch_biasprm = model.actuator_biasprm[clutch_id].copy()
-            progress = SimulationProgress(TOTAL_SIM_TIME, model.opt.timestep)
+            clutch_gainprm[0] = profile.spring_stiffness
+            if clutch_biasprm.size > 1:
+                clutch_biasprm[1] = -profile.spring_stiffness
 
-            def compute_gait_state(current_time: float):
-                gait_phase = (current_time % T_CYCLE) / T_CYCLE if T_CYCLE else 0.0
-                phase_label = "stance" if gait_phase < 0.6 else "swing"
-                return gait_phase, phase_label
+            engaged = profile.clutch_engaged(data.time)
+            if engaged:
+                data.ctrl[clutch_id] = data.qpos[exo_joint.qposadr[0]]
+                model.actuator_gainprm[clutch_id] = clutch_gainprm
+                model.actuator_biasprm[clutch_id] = clutch_biasprm
+            else:
+                model.actuator_gainprm[clutch_id] = 0
+                model.actuator_biasprm[clutch_id] = 0
 
+            progress = SimulationProgress(max(target_time, 0.0), model.opt.timestep)
             progress.start()
+
             step_count = 0
-            gait_phase, phase_label = compute_gait_state(data.time)
-            progress.update(data.time, step_count, gait_phase, phase_label, None)
+            prev_engaged = engaged
             last_step_duration = None
-            while viewer.is_running() and data.time < TOTAL_SIM_TIME:
+
+            initial_phase = profile.gait_phase(data.time)
+            initial_label = profile.phase_label(data.time)
+            progress.update(data.time, step_count, initial_phase, initial_label, None)
+
+            while viewer.is_running() and data.time < target_time:
                 iteration_start = time.perf_counter()
 
                 mujoco.mj_step(model, data)
                 step_count += 1
 
-                # Desired target
-                theta_des_rad = math.radians(kinematics.knee_angle_fourier(data.time))
-                data.ctrl[model.actuator("knee_actuator").id] = theta_des_rad
+                theta_des_rad = profile.knee_angle_rad(data.time)
+                data.ctrl[knee_actuator_id] = theta_des_rad
 
-
-                if not hasattr(sim, "prev_engaged"):
-                    sim.prev_engaged = None
-
-                engaged = (data.time % T_CYCLE < T_CYCLE * 0.35)
-                if engaged != sim.prev_engaged:
-                    if engaged:
-                        model.actuator_gainprm[clutch_id] = clutch_gainprm
-                        model.actuator_biasprm[clutch_id] = clutch_biasprm
-                    else:
-                        model.actuator_gainprm[clutch_id] = 0
-                        model.actuator_biasprm[clutch_id] = 0
-                    sim.prev_engaged = engaged
+                engaged_now = profile.clutch_engaged(data.time)
+                if engaged_now and not prev_engaged:
+                    data.ctrl[clutch_id] = data.qpos[exo_joint.qposadr[0]]
+                    model.actuator_gainprm[clutch_id] = clutch_gainprm
+                    model.actuator_biasprm[clutch_id] = clutch_biasprm
+                elif prev_engaged and not engaged_now:
+                    model.actuator_gainprm[clutch_id] = 0
+                    model.actuator_biasprm[clutch_id] = 0
+                prev_engaged = engaged_now
 
                 if record_force:
-                    phantom_knee = model.joint("knee_angle")
-                    exo_knee = model.joint("shank_band_knee")
-
-                    torque = data.actuator_force[model.actuator("knee_actuator").id]
+                    torque = data.actuator_force[knee_actuator_id]
                     # Control
-                    torque_applied = data.qfrc_applied[phantom_knee.dofadr[0]] # Applied generalized force
+                    torque_applied = data.qfrc_applied[knee_joint.dofadr[0]] # Applied generalized force
                     # Computed by mj_fwdVelocity/mj_rne (without acceleration)
-                    torque_bias = data.qfrc_bias[phantom_knee.dofadr[0]] # C(qpos,qvel)
+                    torque_bias = data.qfrc_bias[knee_joint.dofadr[0]] # C(qpos,qvel)
                     # Computed by mj_fwdVelocity/mj_passive
-                    torque_spring = data.qfrc_spring[phantom_knee.dofadr[0]] # Passive spring force
-                    torque_damper = data.qfrc_damper[phantom_knee.dofadr[0]] # Passive damper force
-                    torque_gravcomp = data.qfrc_gravcomp[phantom_knee.dofadr[0]] # Passive gravity compensation force
-                    torque_fluid = data.qfrc_fluid[phantom_knee.dofadr[0]] # Passive fluid force
-                    torque_passive = data.qfrc_passive[phantom_knee.dofadr[0]] # Total passive force
+                    torque_spring = data.qfrc_spring[knee_joint.dofadr[0]] # Passive spring force
+                    torque_damper = data.qfrc_damper[knee_joint.dofadr[0]] # Passive damper force
+                    torque_gravcomp = data.qfrc_gravcomp[knee_joint.dofadr[0]] # Passive gravity compensation force
+                    torque_fluid = data.qfrc_fluid[knee_joint.dofadr[0]] # Passive fluid force
+                    torque_passive = data.qfrc_passive[knee_joint.dofadr[0]] # Total passive force
                     # Computed by mj_fwdActuation
-                    torque_actuator = data.qfrc_actuator[phantom_knee.dofadr[0]] # Actuator force
+                    torque_actuator = data.qfrc_actuator[knee_joint.dofadr[0]] # Actuator force
                     # Computed by mj_fwdAcceleration
-                    torque_smooth = data.qfrc_smooth[phantom_knee.dofadr[0]] # Net unconstrained force
+                    torque_smooth = data.qfrc_smooth[knee_joint.dofadr[0]] # Net unconstrained force
                     # Computed by mj_fwdConstraint/mj_inverse
-                    torque_constraint = data.qfrc_constraint[phantom_knee.dofadr[0]] # Constraint force
+                    torque_constraint = data.qfrc_constraint[knee_joint.dofadr[0]] # Constraint force
                     # Computed by mj_inverse
-                    torque_inverse = data.qfrc_inverse[phantom_knee.dofadr[0]] # Net external force; should equal: qfrc_applied + J'*xfrc_applied + qfrc_actuator
+                    torque_inverse = data.qfrc_inverse[knee_joint.dofadr[0]] # Net external force; should equal: qfrc_applied + J'*xfrc_applied + qfrc_actuator
 
+                    exo_applied = data.qfrc_applied[exo_joint.dofadr[0]]
+                    exo_bias = data.qfrc_bias[exo_joint.dofadr[0]]
+                    exo_spring = data.qfrc_spring[exo_joint.dofadr[0]]
+                    exo_damper = data.qfrc_damper[exo_joint.dofadr[0]]
+                    exo_gravcomp = data.qfrc_gravcomp[exo_joint.dofadr[0]]
+                    exo_fluid = data.qfrc_fluid[exo_joint.dofadr[0]]
+                    exo_passive = data.qfrc_passive[exo_joint.dofadr[0]]
+                    exo_actuator = data.qfrc_actuator[exo_joint.dofadr[0]]
+                    exo_smooth = data.qfrc_smooth[exo_joint.dofadr[0]]
+                    exo_constraint = data.qfrc_constraint[exo_joint.dofadr[0]]
+                    exo_inverse = data.qfrc_inverse[exo_joint.dofadr[0]]
 
-                    exo_applied = data.qfrc_applied[exo_knee.dofadr[0]]
-                    exo_bias = data.qfrc_bias[exo_knee.dofadr[0]]
-                    exo_spring = data.qfrc_spring[exo_knee.dofadr[0]]
-                    exo_damper = data.qfrc_damper[exo_knee.dofadr[0]]
-                    exo_gravcomp = data.qfrc_gravcomp[exo_knee.dofadr[0]]
-                    exo_fluid = data.qfrc_fluid[exo_knee.dofadr[0]]
-                    exo_passive = data.qfrc_passive[exo_knee.dofadr[0]]
-                    exo_actuator = data.qfrc_actuator[exo_knee.dofadr[0]]
-                    exo_smooth = data.qfrc_smooth[exo_knee.dofadr[0]]
-                    exo_constraint = data.qfrc_constraint[exo_knee.dofadr[0]]
-                    exo_inverse = data.qfrc_inverse[exo_knee.dofadr[0]]
+                    spring_torque = -data.actuator_force[clutch_id]
+                    exo_torque = data.qfrc_constraint[exo_joint.dofadr[0]]
 
-
-                    spring_torque = -data.actuator_force[model.actuator("clutch_spring").id]
-                    i = exo_knee.dofadr[0]
-                    exo_torque = data.qfrc_constraint[exo_knee.dofadr[0]]
-
-                    exo_theta = data.qpos[exo_knee.qposadr[0]]
-                    spring_length = (exo_theta - data.ctrl[clutch_id]) if engaged else 0
+                    exo_theta = data.qpos[exo_joint.qposadr[0]]
+                    spring_length = (exo_theta - data.ctrl[clutch_id]) if engaged_now else 0
 
                     # Log
                     logs["time"].append(data.time)
-                    logs["gait"].append((data.time % T_CYCLE) / T_CYCLE)
+                    logs["gait"].append(profile.gait_phase(data.time))
                     logs["moment"].append(torque)
-                    logs["phantom_theta"].append(data.qpos[phantom_knee.qposadr[0]])
-                    logs["phantom_omega"].append(data.qvel[phantom_knee.dofadr[0]])
-                    logs["phantom_alpha"].append(data.qacc[phantom_knee.dofadr[0]])
+                    logs["phantom_theta"].append(data.qpos[knee_joint.qposadr[0]])
+                    logs["phantom_omega"].append(data.qvel[knee_joint.dofadr[0]])
+                    logs["phantom_alpha"].append(data.qacc[knee_joint.dofadr[0]])
                     logs["exo_theta"].append(exo_theta)
-                    logs["exo_omega"].append(data.qvel[exo_knee.dofadr[0]])
-                    logs["exo_alpha"].append(data.qacc[exo_knee.dofadr[0]])
+                    logs["exo_omega"].append(data.qvel[exo_joint.dofadr[0]])
+                    logs["exo_alpha"].append(data.qacc[exo_joint.dofadr[0]])
                     logs["exo_moment"].append(exo_torque)
                     logs["spring_moment"].append(spring_torque)
                     logs["spring_length"].append(spring_length)
@@ -173,7 +218,8 @@ def sim(model_path, actuated=True, record_video=False, record_force=False):
                 # Display
                 viewer.sync()
                 last_step_duration = time.perf_counter() - iteration_start
-                gait_phase, phase_label = compute_gait_state(data.time)
+                gait_phase = profile.gait_phase(data.time)
+                phase_label = profile.phase_label(data.time)
                 progress.update(data.time, step_count, gait_phase, phase_label, last_step_duration)
 
                 # Update camera
@@ -187,7 +233,8 @@ def sim(model_path, actuated=True, record_video=False, record_force=False):
                 dt = model.opt.timestep - loop_duration
                 if dt > 0:
                     time.sleep(dt)
-            gait_phase, phase_label = compute_gait_state(data.time)
+            gait_phase = profile.gait_phase(data.time)
+            phase_label = profile.phase_label(data.time)
             progress.finish(data.time, step_count, gait_phase, phase_label, last_step_duration)
 
         return logs if record_force else None, (frames, fps) if record_video else (None, None)
