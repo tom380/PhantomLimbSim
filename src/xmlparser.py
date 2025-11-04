@@ -145,7 +145,8 @@ def findpins(surfacemesh, flex):
     surface = trimesh.load(surfacemesh, force='mesh')
     distances = trimesh.proximity.signed_distance(surface, points)
 
-    tol = 8e-3
+    # tol = 8e-3
+    tol = 1e-3
     mask = np.abs(distances) < tol
 
     ids = np.nonzero(mask)[0]
