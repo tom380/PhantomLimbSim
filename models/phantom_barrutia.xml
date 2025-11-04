@@ -1,5 +1,17 @@
 <mujoco model="phantom_barrutia">
-    <option timestep=".0002"/>
+    <!-- <option timestep=".0002" integrator="implicitfast" iterations="200" sdf_iterations="40" sdf_initpoints="80" ccd_iterations="100"/> -->
+    <option timestep=".0002" integrator="implicit" iterations="200" sdf_iterations="8" sdf_initpoints="32"/>
+
+    <extension>
+        <plugin plugin="mujoco.sdf.sdflib">
+            <instance name="sdf_thigh">
+                <config key="aabb" value="0"/>
+            </instance>
+            <instance name="sdf_shank">
+                <config key="aabb" value="0"/>
+            </instance>
+        </plugin>
+    </extension>
 
     <compiler angle="radian" strippath="true" meshdir="meshes/Barrutia/"/>
 
@@ -21,9 +33,17 @@
         <mesh file="Tibia.STL" name="tibia"/>
         <mesh file="Foot.STL" name="foot"/>
         <mesh file="Platform.STL" name="platform"/>
+        <mesh file="Thigh.STL" name="thigh"/>
+        <mesh file="Shank.STL" name="shank"/>
         <mesh file="ThighStrap.STL" name="thigh_strap"/>
         <mesh file="ShankStrap.STL" name="shank_strap"/>
         <!-- <mesh file="ThighCol.STL" name="thigh_strap_col"/> -->
+        <mesh file="ThighStrapCol.obj" name="thigh_strap_col_sdf">
+            <plugin instance="sdf_thigh"/>
+        </mesh>
+        <mesh file="ShankStrapCol.obj" name="shank_strap_col_sdf">
+            <plugin instance="sdf_shank"/>
+        </mesh>
         <meshfinder>
             <mesh name="ThighCol" alias="thigh_strap_col" split="true"/>
             <mesh name="ShankCol" alias="shank_strap_col" split="true"/>
@@ -49,13 +69,16 @@
     <equality>
         <!-- <weld body1="foot" body2="platform" torquescale="1000" solref="0.004 50000" solimp="0.9 0.95 0.001"/> -->
         <weld body1="foot" body2="platform" torquescale="1000" solref="-100000 -2000" solimp="0.95 0.99 0.0001"/>
+        <!-- <weld body1="thigh_band" body2="thigh" torquescale="1000" solref="-100000 -2000" solimp="0.95 0.99 0.0001"/>
+        <weld body1="shank_band" body2="shank" torquescale="1000" solref="-100000 -2000" solimp="0.95 0.99 0.0001"/> -->
         <!-- <weld body1="foot" body2="platform" torquescale="1000"/> -->
     </equality>
 
     <actuator>
         <position name="knee_actuator" kp="10000" kv="200" joint="knee_angle"/>
-        <position name="clutch_spring" joint="shank_band_knee" kp="66"/>
+        <position name="clutch_spring" joint="shank_band_knee" kp="144.5"/>
     </actuator>
+    <!-- 59.604965380516845	89.692223816246951	1.445135624936535e+02	1.958747359748776e+02	2.831155274990882e+02	3.518861634135672e+02 -->
 
     <sensor>
         <torque name="knee_moment" site="knee_sensor"/>
@@ -64,7 +87,8 @@
 
     <worldbody>
         <!-- <camera name="fixed_cam" mode="fixed" pos="0.628 -0.961 0.780" xyaxes="0.866 0.500 0.000 -0.171 0.296 0.940"/> -->
-        <camera name="fixed_cam" mode="fixed" pos="0.991 0.629 0.640" xyaxes="-0.514 0.858 -0.000 -0.234 -0.140 0.962"/>
+        <!-- <camera name="fixed_cam" mode="fixed" pos="0.991 0.629 0.640" xyaxes="-0.514 0.858 -0.000 -0.234 -0.140 0.962"/> OLD -->
+        <camera name="fixed_cam" mode="fixed" pos="-0.529 0.913 0.698" xyaxes="-0.828 -0.561 0.000 0.204 -0.301 0.932"/>
         <!-- <camera name="fixed_cam" mode="fixed" pos="-0.066 -0.097 0.523" xyaxes="0.705 -0.709 0.000 0.083 0.083 0.993"/> -->
 
 
@@ -86,9 +110,10 @@
                     <flexcomp type="gmsh" file="Thigh.msh" rgba=".9 .7 .0 .3" name="thigh" dim="2" radius="0" mass="2.26449451">
                         <contact condim="3" solref="0.01 1" solimp=".95 .99 .0001" selfcollide="none"/>
                         <edge damping="1"/>
-                        <elasticity young="6.6e4" poisson="0.48" damping="2.5e-5"/>
+                        <elasticity young="6.7e4" poisson="0.475" damping="2.5e-5"/>
                         <pinmesh mesh="femur"/>
                     </flexcomp>
+                    <!-- <geom mesh="thigh" name="thigh" type="mesh" mass="2.26449451"/> -->
                 </body>
 
                 <body name="thigh_band" pos="0.00526 0 -0.29865" childclass="exosuit">
@@ -96,7 +121,7 @@
                     <geom mesh="thigh_strap" name="thigh_band" type="mesh" pos="0 0 0" mass="0.635" euler="0 0 0"/>
 
                     <body name="thigh_band_collsion" pos="0 0 0" childclass="exosuit_collision">
-                        <geom mesh="thigh_strap_col" name="thigh_band_col" type="mesh" pos="0 0 0" mass="0.635" euler="0 0 0"/>
+                        <!-- <geom mesh="thigh_strap_col" name="thigh_band_col" type="mesh" pos="0 0 0" mass="0.635" euler="0 0 0"/> -->
                         <!-- <geom type="box" mass="0.105" size="0.005 0.02 0.07" pos="-0.059 0 0.11365" euler="0 -0.13 0"/>
                         <geom type="box" mass="0.105" size="0.005 0.02 0.07" pos="-0.050  0.035  0.11365" euler="0 -0.21 -0.6"/>
                         <geom type="box" mass="0.105" size="0.005 0.02 0.07" pos="-0.049  -0.035  0.11365" euler="0 -0.15 0.6"/>
@@ -104,6 +129,9 @@
                         <geom type="box" mass="0.105" size="0.005 0.02 0.07" pos="0.065  0  0.11365" euler="0 0.08 -0.1"/>
                         <geom type="box" mass="0.105" size="0.005 0.02 0.07" pos="0.058  0.035  0.11365" euler="0 0.18 0.4"/>
                         <geom type="box" mass="0.105" size="0.005 0.02 0.07" pos="0.046  -0.035  0.11365" euler="0 0.08 -0.7"/> -->
+                        <geom type="sdf" name="thigh_band_col" pos="0 0 0" mass="0.635" mesh="thigh_strap_col_sdf">
+                            <plugin instance="sdf_thigh"/>
+                        </geom>
                     </body>
 
                     <body name="shank_band" pos="0 0 0">
@@ -111,7 +139,7 @@
                         <geom mesh="shank_strap" name="shank_band" type="mesh" pos="0 0 0" mass="0.388" euler="0 0 0"/>
 
                         <body name="shank_band_collision" pos="0 0 0" childclass="exosuit_collision">
-                            <geom mesh="shank_strap_col" name="shank_band_col" type="mesh" pos="0 0 0" mass="0.388" euler="0 0 0"/>
+                            <!-- <geom mesh="shank_strap_col" name="shank_band_col" type="mesh" pos="0 0 0" mass="0.388" euler="0 0 0"/> -->
                             <!-- <geom type="box" mass="0.065" size="0.005 0.02 0.09" pos="-0.058 0 -0.16" euler="0 -0.1 0"/>
                             <geom type="box" mass="0.065" size="0.005 0.02 0.09" pos="-0.050 0.035 -0.16" euler="0 -0.1 -0.6"/>
                             <geom type="box" mass="0.065" size="0.005 0.02 0.09" pos="-0.037 -0.03 -0.16" euler="0 -0.11 0.9"/>
@@ -119,6 +147,9 @@
                             <geom type="box" mass="0.065" size="0.005 0.02 0.09" pos="0.0325 0.01 -0.16" euler="0 0.045 0"/>
                             <geom type="box" mass="0.065" size="0.005 0.02 0.09" pos="0.0185 0.04 -0.16" euler="0 0.08 0.8"/>
                             <geom type="box" mass="0.065" size="0.005 0.02 0.09" pos="0.025 -0.02 -0.16" euler="0 0.055 -0.8"/> -->
+                            <geom type="sdf" name="shank_band_col" pos="0 0 0" mass="0.388" mesh="shank_strap_col_sdf">
+                                <plugin instance="sdf_shank"/>
+                            </geom>
                         </body>
                     </body>
                 </body>
@@ -133,9 +164,11 @@
                         <flexcomp type="gmsh" file="Shank.msh" rgba=".9 .7 .0 .3" name="l_shank" dim="2" radius="0" mass="0.90204033">
                             <contact condim="3" solref="0.01 1" solimp=".95 .99 .0001" selfcollide="none"/>
                             <edge damping="1"/>
-                            <elasticity young="6.6e4" poisson="0.48" damping="2.5e-5"/>
+                            <elasticity young="6.7e4" poisson="0.475" damping="2.5e-5"/>
+                            <!-- 1.8115e04 -->
                             <pinmesh mesh="tibia"/>
                         </flexcomp>
+                        <!-- <geom mesh="shank" name="shank" type="mesh" mass="0.90204033"/> -->
                     </body>
 
                     <body name="foot" pos="-0.00526 0 -0.30429">
