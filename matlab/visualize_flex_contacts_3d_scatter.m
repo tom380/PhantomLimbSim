@@ -1,8 +1,9 @@
-function visualize_flex_contacts_3d_scatter(matFile, outputVideo, maxFrames, targetFlex, smoothWindowSec, maxContacts, sizeScale, splitFrontBack)
+function visualize_flex_contacts_3d_scatter(matFile, outputVideo, maxFrames, targetFlex, smoothWindowSec, maxContacts, sizeScale, splitFrontBack, syncVideo)
 %VISUALIZE_FLEX_CONTACTS_3D_SCATTER Unwrapped scatter with size = |force|.
 %   visualize_flex_contacts_3d_scatter()                     % uses flex_contacts_simple.mat
 %   visualize_flex_contacts_3d_scatter('file.mat','out.mp4') % save MP4
 %   visualize_flex_contacts_3d_scatter('file.mat','',240,[],0.03,4e5,1.0,true)
+%   visualize_flex_contacts_3d_scatter('file.mat','',240,[],0.03,4e5,1.0,true,'video.mp4') % synced video panel
 %
 % - Unwraps to (theta, axial) per flex (body +Z axis as axial).
 % - Point size scales with smoothed |force|.
@@ -16,6 +17,7 @@ if nargin < 5 || isempty(smoothWindowSec), smoothWindowSec = 0.03; end
 if nargin < 6 || isempty(maxContacts), maxContacts = 4e5; end
 if nargin < 7 || isempty(sizeScale), sizeScale = 1.0; end
 if nargin < 8 || isempty(splitFrontBack), splitFrontBack = false; end
+if nargin < 9, syncVideo = []; end
 
 S = load(matFile);
 for f = ["time","flex_id","pos","force_world","normal"]
@@ -168,17 +170,45 @@ axLo = axMin - pad;
 axHi = axMax + pad;
 
 fig = figure('Name', 'Flex contact scatter (size = |force|)');
-ax  = axes('Parent', fig);
-grid(ax, 'on');
-xlabel(ax, 'theta (rad)'); ylabel(ax, 'axial (m)');
-title(ax, 't = 0.000 s');
-cb = colorbar(ax); ylabel(cb, '|force| (N)');
-xlim(ax, [thetaLo, thetaHi]);
-ylim(ax, [axLo, axHi]);
-set(ax, 'XLimMode', 'manual', 'YLimMode', 'manual');
-axis(ax, 'manual');
-xticks(ax, [0 pi/2 pi 3*pi/2 2*pi]);
-xticklabels(ax, {'0','\pi/2','\pi','3\pi/2','2\pi'});
+ax = [];
+axVideo = [];
+vidObj = [];
+vidFrame = [];
+vidFrameIdx = 1;
+vidTotalFrames = [];
+vidFPS = [];
+hasVideo = ~isempty(syncVideo);
+if hasVideo
+    vidObj = VideoReader(syncVideo);
+    vidFPS = vidObj.FrameRate;
+    vidTotalFrames = ceil(vidObj.Duration * vidFPS);
+    if hasFrame(vidObj)
+        vidFrame = readFrame(vidObj);
+    end
+end
+
+if splitFrontBack
+    if hasVideo
+        tl = tiledlayout(fig, 1, 3, 'TileSpacing', 'compact', 'Padding', 'compact');
+        axVideo = nexttile(tl, 1);
+        axFront = nexttile(tl, 2);
+        axBack  = nexttile(tl, 3);
+        axs = [axFront, axBack];
+    else
+        tl = tiledlayout(fig, 1, 2, 'TileSpacing', 'compact', 'Padding', 'compact');
+        axFront = nexttile(tl, 1);
+        axBack  = nexttile(tl, 2);
+        axs = [axFront, axBack];
+    end
+else
+    if hasVideo
+        tl = tiledlayout(fig, 1, 2, 'TileSpacing', 'compact', 'Padding', 'compact');
+        axVideo = nexttile(tl, 1);
+        ax = nexttile(tl, 2);
+    else
+        ax = axes('Parent', fig);
+    end
+end
 
 magMax = max(magSm);
 if magMax <= 0 || ~isfinite(magMax)
@@ -195,39 +225,42 @@ if ~isempty(outputVideo)
 end
 
 if splitFrontBack
-    tl = tiledlayout(fig, 1, 2, 'TileSpacing', 'compact', 'Padding', 'compact');
-    axFront = nexttile(tl, 1);
-    axBack  = nexttile(tl, 2);
-    axs = [axFront, axBack];
-    titles = ["Front (theta ~ \\pi)", "Back (theta ~ 0/2\\pi)"];
-    frontMaskGlobal = (thetaAll >= (pi/2)) & (thetaAll <= (3*pi/2)); % centered near pi
-    backMaskGlobal  = ~frontMaskGlobal; % near 0/2pi
+    titles = ["Front thigh", "Back thigh"];
+    frontMaskGlobal = (thetaAll <= (pi/2)) | (thetaAll >= (3*pi/2)); % centered near 0/2pi
+    backMaskGlobal  = ~frontMaskGlobal; % near pi
+    thetaWrapped = mod(thetaAll + pi, 2*pi) - pi; % wrap around pi -> [-pi, pi] with 0 at 0/2pi
     for ai = 1:2
-        ax = axs(ai);
-        grid(ax, 'on');
-        xlabel(ax, 'theta (rad)'); ylabel(ax, 'axial (m)');
-        if ax == axFront
-            xlim(ax, [pi/2, 3*pi/2]);
-            xticks(ax, [pi/2 pi 3*pi/2]);
-            xticklabels(ax, {'\pi/2','\pi','3\pi/2'});
+        axSel = axs(ai);
+        grid(axSel, 'on');
+        xlabel(axSel, 'theta (rad)'); ylabel(axSel, 'axial (m)');
+        if axSel == axFront
+            xlim(axSel, [-pi/2, pi/2]);
+            xticks(axSel, [-pi/2 0 pi/2]);
+            xticklabels(axSel, {'-\pi/2','0','\pi/2'});
         else
-            xlim(ax, [-pi/2, pi/2]);
-            xticks(ax, [-pi/2 0 pi/2]);
-            xticklabels(ax, {'-\pi/2','0','\pi/2'});
+            xlim(axSel, [pi/2, 3*pi/2]);
+            xticks(axSel, [pi/2 pi 3*pi/2]);
+            xticklabels(axSel, {'\pi/2','\pi','3\pi/2'});
         end
-        ylim(ax, [axLo, axHi]);
-        set(ax, 'XLimMode', 'manual', 'YLimMode', 'manual');
-        axis(ax, 'manual');
-        title(ax, sprintf('%s | t = %.3f s', titles(ai), tUnique(1)));
-        caxis(ax, [0 magMax]);
+        ylim(axSel, [axLo, axHi]);
+        set(axSel, 'XLimMode', 'manual', 'YLimMode', 'manual');
+        axis(axSel, 'manual');
+        title(axSel, titles(ai));
+        caxis(axSel, [0 magMax]);
     end
-    cb = colorbar(axs(2)); ylabel(cb, '|force| (N)');
+    cb = colorbar(axs(end)); ylabel(cb, '|force| (N)');
 
     mask0 = time == tUnique(1);
     sizes0 = sMin + (magSm / magMax) * (sMax - sMin);
-    thetaBackWrapped = mod(thetaAll + pi, 2*pi) - pi; % map to [-pi, pi] with 0 at pi original
-    scFront = scatter(axFront, thetaAll(mask0 & frontMaskGlobal), axialAll(mask0 & frontMaskGlobal), sizes0(mask0 & frontMaskGlobal), magSm(mask0 & frontMaskGlobal), 'filled', 'MarkerEdgeColor', 'k');
-    scBack  = scatter(axBack,  thetaBackWrapped(mask0 & backMaskGlobal),  axialAll(mask0 & backMaskGlobal),  sizes0(mask0 & backMaskGlobal),  magSm(mask0 & backMaskGlobal),  'filled', 'MarkerEdgeColor', 'k');
+    scFront = scatter(axFront, thetaWrapped(mask0 & frontMaskGlobal), axialAll(mask0 & frontMaskGlobal), sizes0(mask0 & frontMaskGlobal), magSm(mask0 & frontMaskGlobal), 'filled', 'MarkerEdgeColor', 'k');
+    scBack  = scatter(axBack,  thetaAll(mask0 & backMaskGlobal),  axialAll(mask0 & backMaskGlobal),  sizes0(mask0 & backMaskGlobal),  magSm(mask0 & backMaskGlobal),  'filled', 'MarkerEdgeColor', 'k');
+    vidImg = [];
+    if hasVideo && ~isempty(vidFrame)
+        axes(axVideo); %#ok<LAXES>
+        vidImg = imshow(vidFrame, 'Parent', axVideo);
+        axis(axVideo, 'off');
+        title(axVideo, 'Video');
+    end
 
     for k = 1:nFrames
         mask = time == tUnique(k);
@@ -235,24 +268,33 @@ if splitFrontBack
         frontNow = mask & frontMaskGlobal;
         backNow  = mask & backMaskGlobal;
 
-        set(scFront, 'XData', thetaAll(frontNow), ...
+        set(scFront, 'XData', thetaWrapped(frontNow), ...
                      'YData', axialAll(frontNow), ...
                      'CData', magSm(frontNow), ...
                      'SizeData', sizes(frontMaskGlobal(mask)));
-        set(scBack,  'XData', thetaBackWrapped(backNow),  ...
+        set(scBack,  'XData', thetaAll(backNow),  ...
                      'YData', axialAll(backNow),  ...
                      'CData', magSm(backNow),  ...
                      'SizeData', sizes(backMaskGlobal(mask)));
-        for axi = axs
-            if axi == axFront
-                set(axi, 'XLim', [pi/2, 3*pi/2]);
+        for axSel = axs
+            if axSel == axFront
+                set(axSel, 'XLim', [-pi/2, pi/2]);
             else
-                set(axi, 'XLim', [-pi/2, pi/2]);
+                set(axSel, 'XLim', [pi/2, 3*pi/2]);
             end
-            set(axi, 'YLim', [axLo, axHi]);
+            set(axSel, 'YLim', [axLo, axHi]);
         end
-        title(axFront, sprintf('%s | t = %.3f s', titles(1), tUnique(k)));
-        title(axBack,  sprintf('%s | t = %.3f s', titles(2), tUnique(k)));
+        title(axFront, titles(1));
+        title(axBack,  titles(2));
+        if hasVideo && ~isempty(vidFrame)
+            targetFrame = max(1, min(vidTotalFrames, round(tUnique(k) * vidFPS) + 1));
+            while vidFrameIdx < targetFrame && hasFrame(vidObj)
+                vidFrame = readFrame(vidObj);
+                vidFrameIdx = vidFrameIdx + 1;
+            end
+            set(vidImg, 'CData', vidFrame);
+            title(axVideo, 'Video');
+        end
         drawnow;
         if ~isempty(writer)
             writeVideo(writer, getframe(fig));
@@ -262,6 +304,13 @@ else
     mask0 = time == tUnique(1);
     sizes0 = sMin + (magSm(mask0) / magMax) * (sMax - sMin);
     sc = scatter(ax, thetaAll(mask0), axialAll(mask0), sizes0, magSm(mask0), 'filled', 'MarkerEdgeColor', 'k');
+    vidImg = [];
+    if hasVideo && ~isempty(vidFrame)
+        axes(axVideo); %#ok<LAXES>
+        vidImg = imshow(vidFrame, 'Parent', axVideo);
+        axis(axVideo, 'off');
+        title(axVideo, 'Video');
+    end
 
     for k = 1:nFrames
         mask = time == tUnique(k);
@@ -271,7 +320,16 @@ else
                 'CData', magSm(mask), ...
                 'SizeData', sizes);
         set(ax, 'XLim', [thetaLo, thetaHi], 'YLim', [axLo, axHi]);
-        title(ax, sprintf('t = %.3f s', tUnique(k)));
+        title(ax, '');
+        if hasVideo && ~isempty(vidFrame)
+            targetFrame = max(1, min(vidTotalFrames, round(tUnique(k) * vidFPS) + 1));
+            while vidFrameIdx < targetFrame && hasFrame(vidObj)
+                vidFrame = readFrame(vidObj);
+                vidFrameIdx = vidFrameIdx + 1;
+            end
+            set(vidImg, 'CData', vidFrame);
+            title(axVideo, 'Video');
+        end
         drawnow;
         if ~isempty(writer)
             writeVideo(writer, getframe(fig));
