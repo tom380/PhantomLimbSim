@@ -1,9 +1,11 @@
-function visualize_flex_contacts_pressure(matFile, outputVideo, maxFrames, targetFlex, gridTheta, gridAxial, smoothWindowSec, gaussianSigmaCells, showScatter, maxContacts)
+function visualize_flex_contacts_pressure(matFile, outputVideo, maxFrames, targetFlex, gridTheta, gridAxial, smoothWindowSec, gaussianSigmaCells, showScatter, maxContacts, interpMethod, alphaSmooth, climPercentile)
 %VISUALIZE_FLEX_CONTACTS_PRESSURE Animate contact forces as a pressure map.
 %   visualize_flex_contacts_pressure()                         % uses flex_contacts_simple.mat
 %   visualize_flex_contacts_pressure('file.mat','out.mp4')    % save MP4
 %   visualize_flex_contacts_pressure('file.mat','',120,[],[],[],0.03,1.2) % Gaussian blur
 %   visualize_flex_contacts_pressure('file.mat','',120,[],[],[],0.03,1.2,false,4e5) % cap contacts
+%   visualize_flex_contacts_pressure('file.mat','',120,[],[],[],0.03,1.2,false,4e5,'linear') % linear interpolation
+%   visualize_flex_contacts_pressure('file.mat','',120,[],[],[],0.03,1.2,false,4e5,'linear',0.2,95) % temporal smoothing + fixed CLim
 %
 % Renders |force_world| magnitudes onto a (theta, axial) grid per frame,
 % giving a heatmap/pressure look. Optional per-position temporal smoothing
@@ -19,6 +21,9 @@ if nargin < 7 || isempty(smoothWindowSec), smoothWindowSec = 0.03; end
 if nargin < 8 || isempty(gaussianSigmaCells), gaussianSigmaCells = 1.2; end
 if nargin < 9 || isempty(showScatter), showScatter = false; end
 if nargin < 10 || isempty(maxContacts), maxContacts = 4e5; end
+if nargin < 11 || isempty(interpMethod), interpMethod = 'none'; end
+if nargin < 12 || isempty(alphaSmooth), alphaSmooth = 0.0; end % 0 = no temporal smoothing
+if nargin < 13 || isempty(climPercentile), climPercentile = []; end
 
 S = load(matFile);
 for f = ["time","flex_id","pos","force_world","normal"]
@@ -167,8 +172,11 @@ else
 end
 
 magMax = max(mag);
-if magMax <= 0
-    magMax = 1; % avoid zero clim
+if ~isempty(climPercentile)
+    magMax = prctile(mag, climPercentile);
+end
+if magMax <= 0 || ~isfinite(magMax)
+    magMax = 1; % avoid zero/NaN clim
 end
 
 fig = figure('Name', 'Flex contact pressure');
@@ -209,36 +217,76 @@ for k = 1:nFrames
     axialNow = axialAll(mask);
     magNow = mag(mask);
 
-    tBin = discretize(thetaNow, thetaEdges);
-    aBin = discretize(axialNow, axialEdges);
-    validBin = ~isnan(tBin) & ~isnan(aBin);
-    tBin = tBin(validBin);
-    aBin = aBin(validBin);
-    magBin = magNow(validBin);
-
-    if isempty(tBin)
-        gridVals = zeros(gridAxial, gridTheta);
-        countGrid = gridVals;
+    if strcmpi(interpMethod, 'linear') || strcmpi(interpMethod, 'natural')
+        % Interpolate scattered contact magnitudes onto the grid
+        thetaCenters = (thetaEdges(1:end-1) + thetaEdges(2:end)) / 2;
+        axialCenters = (axialEdges(1:end-1) + axialEdges(2:end)) / 2;
+        [TH, AX] = meshgrid(thetaCenters, axialCenters);
+        if numel(thetaNow) > 1
+            pts = [thetaNow, axialNow];
+            [ptsU, ~, ic] = unique(pts, 'rows', 'stable');
+            magU = accumarray(ic, magNow, [], @mean);
+            gridVals = griddata(ptsU(:,1), ptsU(:,2), magU, TH, AX, interpMethod);
+        else
+            gridVals = griddata(thetaNow, axialNow, magNow, TH, AX, interpMethod);
+        end
+        alphaData = ones(size(gridVals)); % show zero where no data
+        gridVals(~isfinite(gridVals)) = 0;
     else
-        linIdx = sub2ind([gridAxial, gridTheta], aBin, tBin);
-        gridVals = accumarray(linIdx, magBin, [gridAxial * gridTheta, 1], @max, NaN);
-        gridVals = reshape(gridVals, [gridAxial, gridTheta]);
-        countGrid = accumarray(linIdx, 1, [gridAxial * gridTheta, 1], @sum, 0);
-        countGrid = reshape(countGrid, [gridAxial, gridTheta]);
+        % Bin by cell (max) then optional Gaussian blur
+        tBin = discretize(thetaNow, thetaEdges);
+        aBin = discretize(axialNow, axialEdges);
+        validBin = ~isnan(tBin) & ~isnan(aBin);
+        tBin = tBin(validBin);
+        aBin = aBin(validBin);
+        magBin = magNow(validBin);
+
+        if isempty(tBin)
+            gridVals = zeros(gridAxial, gridTheta);
+            countGrid = gridVals;
+        else
+            linIdx = sub2ind([gridAxial, gridTheta], aBin, tBin);
+            gridVals = accumarray(linIdx, magBin, [gridAxial * gridTheta, 1], @max, NaN);
+            gridVals = reshape(gridVals, [gridAxial, gridTheta]);
+            countGrid = accumarray(linIdx, 1, [gridAxial * gridTheta, 1], @sum, 0);
+            countGrid = reshape(countGrid, [gridAxial, gridTheta]);
+        end
+
+        if ~isempty(gKernel)
+            vals0 = gridVals;
+            vals0(~isfinite(vals0)) = 0;
+            smVals = conv2(vals0, gKernel, 'same');
+            smCnt = conv2(countGrid, gKernel, 'same');
+            gridVals = smVals ./ max(smCnt, eps);
+            countGrid = smCnt;
+        end
+
+        % Soft alpha based on count, but clamp strong values to reduce square edges
+        if any(countGrid(:))
+            alphaData = min(countGrid ./ max(countGrid(:) + eps), 1);
+        else
+            alphaData = zeros(size(gridVals));
+        end
+        minAlpha = 0.2;
+        alphaData = minAlpha + (1 - minAlpha) * alphaData;
+
+        % Clip extreme force to smooth the core
+        if magMax > 0
+            gridVals = min(gridVals, magMax);
+        end
+        gridVals(~isfinite(gridVals)) = 0;
     end
 
-    % Apply spatial smoothing as a weighted average
-    if ~isempty(gKernel)
-        vals0 = gridVals;
-        vals0(~isfinite(vals0)) = 0;
-        smVals = conv2(vals0, gKernel, 'same');
-        smCnt = conv2(countGrid, gKernel, 'same');
-        gridVals = smVals ./ max(smCnt, eps);
-        countGrid = smCnt;
+    % Temporal smoothing on the grid
+    if k == 1 || alphaSmooth <= 0
+        gridSmooth = gridVals;
+        alphaSmoothFrame = alphaData;
+    else
+        gridSmooth = alphaSmooth * gridVals + (1 - alphaSmooth) * gridSmooth;
+        alphaSmoothFrame = alphaSmooth * alphaData + (1 - alphaSmooth) * alphaSmoothFrame;
     end
 
-    alphaData = min(countGrid ./ max(countGrid(:) + eps), 1); %#ok<NASGU>
-    set(pressureImg, 'CData', gridVals, 'AlphaData', alphaData);
+    set(pressureImg, 'CData', gridSmooth, 'AlphaData', alphaSmoothFrame);
     set(ax, 'CLim', [0 magMax]);
     title(ax, sprintf('t = %.3f s', tUnique(k)));
 
