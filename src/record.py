@@ -59,6 +59,10 @@ def save_flex_contacts(flex_logs, fn=None):
         "pos_local": np.asarray(flex_logs.get("pos_local", []), dtype=float),
         "force_world": np.asarray(flex_logs["force_world"], dtype=float),
         "normal": np.asarray(flex_logs["normal"], dtype=float),
+        "body_id": np.asarray(flex_logs.get("body_id", []), dtype=int),
+        "geom_id": np.asarray(flex_logs.get("geom_id", []), dtype=int),
+        "body_pos_world": np.asarray(flex_logs.get("body_pos_world", []), dtype=float),
+        "body_rot_world": np.asarray(flex_logs.get("body_rot_world", []), dtype=float),
     }
     sio.savemat(name + ".mat", mat_payload)
     print("Saved " + name + ".mat" + " (flex contacts)")

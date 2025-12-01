@@ -83,16 +83,48 @@ def sim(
         contact_force = None
         flex_body_ids = None
         if record_flex_contact:
-            flex_logs = {"time": [], "flex_id": [], "pos": [], "pos_local": [], "force_world": [], "normal": []}
+            flex_logs = {
+                "time": [],
+                "flex_id": [],
+                "pos": [],
+                "pos_local": [],
+                "force_world": [],
+                "normal": [],
+                "body_id": [],
+                "geom_id": [],
+                "body_pos_world": [],
+                "body_rot_world": [],
+            }
             contact_force = np.zeros(6, dtype=float)
-            flex_body_ids = []
+            # Hard-map flex_id -> body_id: 0 -> thigh, 1 -> shank (fallback to nodebodyid/mode)
+            flex_body_ids = [-1] * model.nflex
+            flex_name_to_body = {"thigh": "thigh", "l_shank": "shank"}
+            flex_body_lookup = {}
+            for flex_name, body_name in flex_name_to_body.items():
+                try:
+                    flex_body_lookup[flex_name] = mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_BODY, body_name)
+                except Exception:
+                    flex_body_lookup[flex_name] = -1
+
             for flex_id in range(model.nflex):
-                node_start = model.flex_nodeadr[flex_id]
-                if model.flex_nodenum[flex_id] <= 0:
-                    flex_body_ids.append(-1)
-                    continue
-                body_id = int(model.flex_nodebodyid[node_start])
-                flex_body_ids.append(body_id)
+                body_id = -1
+                if flex_id == 0 and flex_body_lookup.get("thigh", -1) >= 0:
+                    body_id = flex_body_lookup["thigh"]
+                elif flex_id == 1 and flex_body_lookup.get("l_shank", -1) >= 0:
+                    body_id = flex_body_lookup["l_shank"]
+
+                if body_id < 0:
+                    node_start = model.flex_nodeadr[flex_id]
+                    node_num = model.flex_nodenum[flex_id]
+                    if node_num > 0:
+                        nodes = model.flex_nodebodyid[node_start: node_start + node_num]
+                        nodes = [int(x) for x in nodes if int(x) >= 0]
+                        if len(nodes) > 0:
+                            # choose the most frequent body id among nodes
+                            vals, counts = np.unique(nodes, return_counts=True)
+                            body_id = int(vals[np.argmax(counts)])
+
+                flex_body_ids[flex_id] = body_id
 
         with mujoco.viewer.launch_passive(model, data) as viewer:
             knee_joint = model.joint("knee_angle")
@@ -249,12 +281,19 @@ def sim(
                             normal_component = contact_force[0] if side == 0 else -contact_force[0]
 
                             pos_local = contact_pos
-                            if flex_body_ids is not None:
-                                body_id = flex_body_ids[flex_id] if flex_id < len(flex_body_ids) else -1
-                                if body_id >= 0:
-                                    body_pos = np.asarray(data.xpos[body_id], dtype=float)
-                                    body_rot = np.asarray(data.xmat[body_id], dtype=float).reshape(3, 3)
-                                    pos_local = body_rot.T @ (contact_pos - body_pos)
+                            geom_id = int(contact.geom[side])
+                            # Always map flex_id -> body via precomputed flex_body_ids
+                            body_id = flex_body_ids[flex_id] if flex_id < len(flex_body_ids) else -1
+                            if body_id < 0 and geom_id >= 0:
+                                # Fallback: geom body if flex mapping missing
+                                body_id = int(model.geom_bodyid[geom_id])
+
+                            body_pos = np.full(3, np.nan, dtype=float)
+                            body_rot = np.full((3, 3), np.nan, dtype=float)
+                            if body_id >= 0:
+                                body_pos = np.asarray(data.xpos[body_id], dtype=float)
+                                body_rot = np.asarray(data.xmat[body_id], dtype=float).reshape(3, 3)
+                                pos_local = body_rot.T @ (contact_pos - body_pos)
 
                             flex_logs["time"].append(data.time)
                             flex_logs["flex_id"].append(flex_id)
@@ -262,6 +301,10 @@ def sim(
                             flex_logs["pos_local"].append(np.asarray(pos_local, dtype=float))
                             flex_logs["force_world"].append(applied_force.copy())
                             flex_logs["normal"].append(float(normal_component))
+                            flex_logs["body_id"].append(body_id)
+                            flex_logs["geom_id"].append(geom_id)
+                            flex_logs["body_pos_world"].append(np.asarray(body_pos, dtype=float))
+                            flex_logs["body_rot_world"].append(np.asarray(body_rot, dtype=float))
 
 
                 # Display
