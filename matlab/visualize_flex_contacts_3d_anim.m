@@ -1,11 +1,11 @@
-function visualize_flex_contacts_3d_anim(matFile, outputVideo, maxFrames, targetFlex, smoothWindowSec)
+function visualize_flex_contacts_3d_anim(matFile, outputVideo, maxFrames, targetFlex, smoothWindowSec, maxContacts)
 %VISUALIZE_FLEX_CONTACTS_3D_ANIM Animate flex contacts unwrapped to 2D.
 %   visualize_flex_contacts_3d_anim()                     % uses flex_contacts_simple.mat
 %   visualize_flex_contacts_3d_anim('file.mat')           % live playback only
 %   visualize_flex_contacts_3d_anim('file.mat','out.mp4') % also saves MP4
 %   visualize_flex_contacts_3d_anim('file.mat','',120)    % limit to 120 frames for faster playback
 %   visualize_flex_contacts_3d_anim('file.mat','',120,3)  % only plot flex_id == 3 (e.g., thigh or shank)
-%   visualize_flex_contacts_3d_anim('file.mat','',120,[],0.03) % apply 30 ms smoothing to |force|
+%   visualize_flex_contacts_3d_anim('file.mat','',120,[],0.03,4e5) % cap contacts for faster startup
 %
 % Uses PCA-based unwrap of local positions. No saved theta/axial required.
 
@@ -14,6 +14,7 @@ if nargin < 2,                       outputVideo = []; end
 if nargin < 3 || isempty(maxFrames), maxFrames = 240; end
 if nargin < 4,                       targetFlex = []; end
 if nargin < 5 || isempty(smoothWindowSec), smoothWindowSec = 0.03; end
+if nargin < 6 || isempty(maxContacts), maxContacts = 4e5; end
 
 S = load(matFile);
 for f = ["time","flex_id","pos","force_world","normal"]
@@ -24,7 +25,11 @@ end
 
 time = S.time(:);
 pos = double(S.pos);
-pos_local = reconstruct_local(S, pos);
+if isfield(S, 'pos_local') && ~isempty(S.pos_local)
+    pos_local = double(S.pos_local);
+else
+    pos_local = pos;
+end
 forceW = double(S.force_world);
 mag = vecnorm(forceW, 2, 2);
 fid = S.flex_id(:);
@@ -43,6 +48,19 @@ if ~isempty(targetFlex)
     fid        = fid(maskFlex);
 end
 
+% Optional contact cap to speed up preprocessing
+if maxContacts > 0 && numel(time) > maxContacts
+    stride = ceil(numel(time) / maxContacts);
+    keepIdx = 1:stride:numel(time);
+    time       = time(keepIdx);
+    pos        = pos(keepIdx, :);
+    pos_local  = pos_local(keepIdx, :);
+    forceW     = forceW(keepIdx, :);
+    mag        = mag(keepIdx, :);
+    fid        = fid(keepIdx);
+    fprintf('Downsampled contacts: stride %d (kept %d of %d)\n', stride, numel(time), numel(S.time));
+end
+
 % Sort by time
 [time, order] = sort(time);
 pos        = pos(order, :);
@@ -59,27 +77,6 @@ else
 end
 if ~isfinite(dtEstimate) || dtEstimate <= 0
     dtEstimate = 1/60; % fallback to something reasonable
-end
-
-% Low-pass filter contact magnitudes per contact location to reduce flicker
-if smoothWindowSec > 0
-    winSamples = max(1, round(smoothWindowSec / dtEstimate));
-    if winSamples > 1
-        posTol = 1e-5; % meters, groups repeated contact locations
-        posKey = round(pos_local / posTol) * posTol;
-        [~, ~, posIdx] = unique(posKey, 'rows', 'stable');
-        magSmoothed = mag;
-        for pid = 1:max(posIdx)
-            rows = posIdx == pid;
-            if nnz(rows) <= 1
-                continue;
-            end
-            magSmoothed(rows) = movmean(mag(rows), winSamples, 'Endpoints', 'shrink');
-        end
-        mag = magSmoothed;
-        fprintf('Smoothed |force| with %d-sample moving average (~%.1f ms window)\n', ...
-                winSamples, winSamples * dtEstimate * 1e3);
-    end
 end
 
 % Unwrap positions to cylindrical coordinates using a known body axis (per flex)
@@ -190,58 +187,5 @@ end
 if ~isempty(writer)
     close(writer);
     fprintf('Saved %s\n', outputVideo);
-end
-end
-
-function pos_local = reconstruct_local(S, pos_world)
-% Prefer saved pos_local; otherwise rebuild from saved world pose.
-n = size(pos_world, 1);
-pos_local = pos_world;
-
-if isfield(S, 'pos_local') && ~isempty(S.pos_local)
-    pos_local = reshape(double(S.pos_local), [], 3);
-    return;
-end
-
-if isfield(S, 'body_pos_world') && isfield(S, 'body_rot_world') ...
-        && ~isempty(S.body_pos_world) && ~isempty(S.body_rot_world)
-
-    body_pos = reshape(double(S.body_pos_world), [], 3);
-    if size(body_pos, 1) == n
-        rot = double(S.body_rot_world);
-        pos_local = nan(n, 3);
-
-        if ndims(rot) == 3 && size(rot, 1) == 3 && size(rot, 2) == 3 && size(rot, 3) == n
-            for k = 1:n
-                R = rot(:, :, k); % body->world
-                delta = pos_world(k, :) - body_pos(k, :);
-                pos_local(k, :) = (R.' * delta.').';
-            end
-        elseif ndims(rot) == 3 && size(rot, 2) == 3 && size(rot, 3) == 3 && size(rot, 1) == n
-            for k = 1:n
-                R = squeeze(rot(k, :, :));
-                delta = pos_world(k, :) - body_pos(k, :);
-                pos_local(k, :) = (R.' * delta.').';
-            end
-        else
-            rot_raw = reshape(rot, [], 9);
-            if size(rot_raw, 1) == n
-                for k = 1:n
-                    R = reshape(rot_raw(k, :), 3, 3);
-                    delta = pos_world(k, :) - body_pos(k, :);
-                    pos_local(k, :) = (R.' * delta.').';
-                end
-            else
-                warning('body_rot_world length mismatch; using world coordinates');
-                pos_local = pos_world;
-            end
-        end
-    else
-        warning('body_pos_world length mismatch; using world coordinates');
-    end
-end
-
-if ~any(isfinite(pos_local), 'all')
-    pos_local = pos_world;
 end
 end

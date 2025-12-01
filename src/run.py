@@ -92,8 +92,6 @@ def sim(
                 "normal": [],
                 "body_id": [],
                 "geom_id": [],
-                "body_pos_world": [],
-                "body_rot_world": [],
             }
             contact_force = np.zeros(6, dtype=float)
             # Hard-map flex_id -> body_id: 0 -> thigh, 1 -> shank (fallback to nodebodyid/mode)
@@ -303,8 +301,6 @@ def sim(
                             flex_logs["normal"].append(float(normal_component))
                             flex_logs["body_id"].append(body_id)
                             flex_logs["geom_id"].append(geom_id)
-                            flex_logs["body_pos_world"].append(np.asarray(body_pos, dtype=float))
-                            flex_logs["body_rot_world"].append(np.asarray(body_rot, dtype=float))
 
 
                 # Display

@@ -53,16 +53,14 @@ def save_flex_contacts(flex_logs, fn=None):
 
     name = fn + "_flex_contacts" if fn else "flex_contacts_simple"
     mat_payload = {
-        "time": np.asarray(flex_logs["time"], dtype=float),
-        "flex_id": np.asarray(flex_logs["flex_id"], dtype=int),
-        "pos": np.asarray(flex_logs["pos"], dtype=float),
-        "pos_local": np.asarray(flex_logs.get("pos_local", []), dtype=float),
-        "force_world": np.asarray(flex_logs["force_world"], dtype=float),
-        "normal": np.asarray(flex_logs["normal"], dtype=float),
+        "time": np.asarray(flex_logs["time"], dtype=np.float32),
+        "flex_id": np.asarray(flex_logs["flex_id"], dtype=np.int32),
+        "pos": np.asarray(flex_logs["pos"], dtype=np.float32),
+        "pos_local": np.asarray(flex_logs.get("pos_local", []), dtype=np.float32),
+        "force_world": np.asarray(flex_logs["force_world"], dtype=np.float32),
+        "normal": np.asarray(flex_logs["normal"], dtype=np.float32),
         "body_id": np.asarray(flex_logs.get("body_id", []), dtype=int),
         "geom_id": np.asarray(flex_logs.get("geom_id", []), dtype=int),
-        "body_pos_world": np.asarray(flex_logs.get("body_pos_world", []), dtype=float),
-        "body_rot_world": np.asarray(flex_logs.get("body_rot_world", []), dtype=float),
     }
     sio.savemat(name + ".mat", mat_payload)
     print("Saved " + name + ".mat" + " (flex contacts)")
