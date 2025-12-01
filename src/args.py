@@ -37,6 +37,12 @@ def parse_args():
     )
 
     parser.add_argument(
+        "--record-flex-contact",
+        action="store_true",
+        help="Record raw flex contact locations and forces (default: False)",
+    )
+
+    parser.add_argument(
         "--kinematics",
         choices=("average", "full"),
         default="average",

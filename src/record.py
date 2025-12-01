@@ -36,7 +36,7 @@ def plot_last_cycle(logs, output_fn="simulation_results_last_cycle"):
     fig.tight_layout()
     fig.savefig(output_fn + ".png", dpi=300)
     plt.show()
-    print("Saved" + output_fn + ".png")
+    print("Saved " + output_fn + ".png")
 
 def save_video(frames, fps, fn="run"):
     imageio.mimsave(fn + ".mp4", frames, fps=fps, codec="libx264")
@@ -45,4 +45,20 @@ def save_video(frames, fps, fn="run"):
 def save_mat(logs, fn="simulation_data"):
     data = {k: np.asarray(v) for k,v in logs.items()}
     sio.savemat(fn + ".mat", data)
-    print("Saved"+ fn + ".mat" + " (MATLAB‑compatible)")
+    print("Saved " + fn + ".mat" + " (MATLAB-compatible)")
+
+def save_flex_contacts(flex_logs, fn=None):
+    if flex_logs is None:
+        raise ValueError("No flex contact data provided.")
+
+    name = fn + "_flex_contacts" if fn else "flex_contacts_simple"
+    mat_payload = {
+        "time": np.asarray(flex_logs["time"], dtype=float),
+        "flex_id": np.asarray(flex_logs["flex_id"], dtype=int),
+        "pos": np.asarray(flex_logs["pos"], dtype=float),
+        "pos_local": np.asarray(flex_logs.get("pos_local", []), dtype=float),
+        "force_world": np.asarray(flex_logs["force_world"], dtype=float),
+        "normal": np.asarray(flex_logs["normal"], dtype=float),
+    }
+    sio.savemat(name + ".mat", mat_payload)
+    print("Saved " + name + ".mat" + " (flex contacts)")
