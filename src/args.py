@@ -1,6 +1,10 @@
+"""Command-line argument parsing for phantom limb simulation runs."""
+
 import argparse
 
+
 def parse_args():
+    """Build and parse CLI arguments for simulation and output configuration."""
     parser = argparse.ArgumentParser(
         description="Simulate a phantom limb with a knee angle profile and measure forces."
     )
@@ -28,6 +32,23 @@ def parse_args():
         "--record-video",
         action="store_true",
         help="Record the simulation as a video (default: False)",
+    )
+
+    parser.add_argument(
+        "--video-fps",
+        type=float,
+        default=120.0,
+        help="Target recording framerate for video capture (default: 120).",
+    )
+
+    parser.add_argument(
+        "--video-camera",
+        action="append",
+        default=None,
+        help=(
+            "Camera name to record. Repeat to capture multiple cameras. "
+            "Default: fixed_cam."
+        ),
     )
 
     parser.add_argument(
@@ -64,4 +85,14 @@ def parse_args():
         help="Simulation time in seconds (default: configuration value). Use 0 with '--kinematics full' to run the entire dataset.",
     )
 
-    return parser.parse_args()
+    parser.add_argument(
+        "--kinematics-data-dir",
+        type=str,
+        default="data/kinematics",
+        help="Directory containing kinematics.mat and knee_angles.mat (default: data/kinematics).",
+    )
+    args = parser.parse_args()
+    # Keep legacy behavior when no explicit camera is passed.
+    if args.video_camera is None:
+        args.video_camera = ["fixed_cam"]
+    return args

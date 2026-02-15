@@ -1,3 +1,8 @@
+"""Legacy flex surface mapping utilities kept for future analysis workflows.
+
+This module is not used by the active runtime path (main -> run).
+"""
+
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -37,9 +42,11 @@ def _normalise(vec: np.ndarray) -> np.ndarray:
 
 
 def _cylindrical_unwrap(vertices: np.ndarray) -> Dict[str, np.ndarray]:
+    """Approximate a cylindrical parameterization from raw flex vertices."""
     centroid = vertices.mean(axis=0)
     centered = vertices - centroid
 
+    # Use principal axis as cylinder axis estimate.
     cov = centered.T @ centered
     eigvals, eigvecs = np.linalg.eigh(cov)
     axis = eigvecs[:, np.argmax(eigvals)]
@@ -75,6 +82,7 @@ def _cylindrical_unwrap(vertices: np.ndarray) -> Dict[str, np.ndarray]:
 
 
 def _build_adjacency(elements: np.ndarray, vertex_count: int) -> List[List[int]]:
+    """Build per-vertex connectivity from flex elements."""
     adjacency: List[List[int]] = [[] for _ in range(vertex_count)]
     if elements.size == 0:
         return adjacency
@@ -94,6 +102,7 @@ def _build_adjacency(elements: np.ndarray, vertex_count: int) -> List[List[int]]
 
 
 def _unwrap_angles(theta: np.ndarray, elements: np.ndarray, vertex_count: int) -> np.ndarray:
+    """Unwrap angular coordinates continuously over the mesh connectivity graph."""
     unwrapped = np.array(theta, dtype=float, copy=True)
     adjacency = _build_adjacency(elements, vertex_count)
     visited = np.zeros(vertex_count, dtype=bool)
@@ -133,6 +142,7 @@ def _unwrap_angles(theta: np.ndarray, elements: np.ndarray, vertex_count: int) -
 
 
 def compute_flex_surfaces(model: mujoco.MjModel) -> Dict[int, FlexSurfaceInfo]:
+    """Compute geometric descriptors for each flex for downstream analysis."""
     surfaces: Dict[int, FlexSurfaceInfo] = {}
 
     for flex_id in range(model.nflex):

@@ -1,16 +1,23 @@
+"""Utilities for persisting simulation outputs to image, MAT, and video files."""
+
+import re
+
 import imageio.v2 as imageio
 import scipy.io as sio
 import numpy as np
 import matplotlib.pyplot as plt
 
 def plot_last_cycle(logs, output_fn="simulation_results_last_cycle"):
+    """Plot and save the final completed gait cycle for quick inspection."""
     gait = np.array(logs["gait"])
     if gait.size == 0:
         raise ValueError("No gait data available in logs.")
 
+    # Detect cycle wrap (phase jump from ~1 back to ~0) and keep only the last cycle.
     resets = np.where(np.diff(gait) < -0.5)[0]
     start_idx = int(resets[-1] + 1) if resets.size else 0
     gait_segment = gait[start_idx:]
+    # Sort by gait phase to avoid small integration-time jitter in plotting order.
     idx = np.argsort(gait_segment)
 
     knee_a = np.array(logs["phantom_theta"])[start_idx:][idx]
@@ -38,16 +45,33 @@ def plot_last_cycle(logs, output_fn="simulation_results_last_cycle"):
     plt.show()
     print("Saved " + output_fn + ".png")
 
+def _sanitize_name(name):
+    """Normalize camera names for filesystem-safe output filenames."""
+    return re.sub(r"[^A-Za-z0-9_.-]+", "_", str(name))
+
+
 def save_video(frames, fps, fn="run"):
+    """Save one video or one video per camera when frames is a dict."""
+    if isinstance(frames, dict):
+        for camera_name, camera_frames in frames.items():
+            if not camera_frames:
+                continue
+            output_name = f"{fn}_{_sanitize_name(camera_name)}"
+            imageio.mimsave(output_name + ".mp4", camera_frames, fps=fps, codec="libx264")
+            print("Saved " + output_name + ".mp4")
+        return
+
     imageio.mimsave(fn + ".mp4", frames, fps=fps, codec="libx264")
     print("Saved " + fn + ".mp4")
 
 def save_mat(logs, fn="simulation_data"):
+    """Persist force logs in MATLAB-compatible .mat format."""
     data = {k: np.asarray(v) for k,v in logs.items()}
     sio.savemat(fn + ".mat", data)
     print("Saved " + fn + ".mat" + " (MATLAB-compatible)")
 
 def save_flex_contacts(flex_logs, fn=None):
+    """Persist raw flex contact samples as a compact MAT payload."""
     if flex_logs is None:
         raise ValueError("No flex contact data provided.")
 

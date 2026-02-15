@@ -1,3 +1,8 @@
+"""Legacy dynamics helpers retained for future validation and model cross-checks.
+
+This module is not used by the active runtime path (main -> run).
+"""
+
 import numpy as np
 from config import (
     LENGTH_FEMUR, LENGTH_TIBIA,
@@ -8,6 +13,8 @@ from config import (
 )
 
 def theoretical_force(theta, theta_dot, theta_ddot):
+    """Estimate knee force from a reduced-order 2-link dynamics formulation."""
+    # Convert to the internal angle/sign convention used by the derived equations.
     theta = np.pi - theta
     theta_dot = -theta_dot
     theta_ddot = -theta_ddot

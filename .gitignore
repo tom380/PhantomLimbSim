@@ -1,7 +1,7 @@
 .conda/
 .vscode/
 outputs/
-src/__pycache__/
+__pycache__
 *.msh__sf.obj
 *.msh__tracked_surface.stl
 *.msh_.csv

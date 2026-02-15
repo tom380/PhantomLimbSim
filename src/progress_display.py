@@ -1,9 +1,13 @@
+"""Terminal progress bar for live simulation status updates."""
+
 import math
 import sys
 import time
 
 
 class SimulationProgress:
+    """Single-line progress display for long-running simulation loops."""
+
     def __init__(self, total_time, timestep, bar_length=30):
         self.total_time = max(total_time, 0)
         self.timestep = timestep if timestep and timestep > 0 else None
@@ -21,15 +25,6 @@ class SimulationProgress:
         if self.start_time is not None:
             return
         self.start_time = time.perf_counter()
-        # legend_lines = [
-        #     "Progress bar fields:",
-        #     "  |####| -> simulation time progress",
-        #     "  [curr/total] -> completed timesteps",
-        #     "  t= -> wall-clock runtime since start",
-        #     "  gait= -> gait cycle percentage and phase",
-        #     "  step= -> compute time per iteration (excl. sleep)",
-        # ]
-        # print("\n".join(legend_lines))
 
     def _format_elapsed(self, seconds):
         minutes = int(seconds // 60)
@@ -39,6 +34,7 @@ class SimulationProgress:
         return f"{secs}s"
 
     def _write_line(self, line):
+        # Reuse one terminal line; pad with spaces when new content is shorter.
         padding = ""
         if self.last_line_len > len(line):
             padding = " " * (self.last_line_len - len(line))

@@ -1,3 +1,5 @@
+"""XML preprocessing helpers for mesh expansion and flex pin generation."""
+
 import xml.etree.ElementTree as ET
 import glob
 import os
@@ -139,13 +141,14 @@ def expand_geoms(tree, splits):
                     parent.insert(idx + offset, ng)
 
 def findpins(surfacemesh, flex):
+    """Find flex node ids that lie on/near a surface mesh."""
     msh = meshio.read(flex)
     points = msh.points
 
     surface = trimesh.load(surfacemesh, force='mesh')
     distances = trimesh.proximity.signed_distance(surface, points)
 
-    # tol = 8e-3
+    # Keep tolerance fixed for now; exposed configuration was deferred intentionally.
     tol = 1e-3
     mask = np.abs(distances) < tol
 
@@ -153,8 +156,9 @@ def findpins(surfacemesh, flex):
 
     return ids
 
-#TODO Take translation of mesh into account
+# TODO: account for mesh-level translation offsets when computing pin IDs.
 def flexpin(tree):
+    """Replace <pinmesh> declarations with explicit <pin id="..."> entries."""
     root = tree.getroot()
 
     compiler = root.find('compiler')
@@ -187,6 +191,7 @@ def flexpin(tree):
                 flex.insert(idx + offset, pin)
 
 def parse(filepath):
+    """Parse MuJoCo XML and apply meshfinder, split geom expansion, and flex pinning."""
     tree = ET.parse(filepath)
     root = tree.getroot()
     splits = meshfinder(tree)

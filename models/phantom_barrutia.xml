@@ -86,15 +86,11 @@
     </sensor>
 
     <worldbody>
-        <!-- <camera name="fixed_cam" mode="fixed" pos="0.628 -0.961 0.780" xyaxes="0.866 0.500 0.000 -0.171 0.296 0.940"/> -->
         <camera name="fixed_cam" mode="fixed" pos="0.855 1.171 0.570" xyaxes="-0.805 0.593 -0.000 -0.135 -0.183 0.974"/>
-        <!-- <camera name="fixed_cam" mode="fixed" pos="0.991 0.629 0.640" xyaxes="-0.514 0.858 -0.000 -0.234 -0.140 0.962"/> OLD -->
-        <!-- <camera name="fixed_cam" mode="fixed" pos="-0.529 0.913 0.698" xyaxes="-0.828 -0.561 0.000 0.204 -0.301 0.932"/> -->
-        <!-- <camera name="fixed_cam" mode="fixed" pos="-0.066 -0.097 0.523" xyaxes="0.705 -0.709 0.000 0.083 0.083 0.993"/> -->
-
-        <!-- <camera name="fixed_cam" mode="fixed" orthographic="true" fovy="0.8" pos="0.04361 -1 0.35928" xyaxes="1 0 0 0 0 1"/> -->
-        <!-- <camera name="fixed_cam" mode="fixed" orthographic="true" fovy="0.8" pos="0.73794 -0.67627 0.35928" xyaxes="0.707107 0.707107 0 0 0 1"/> -->
-        <!-- <camera name="fixed_cam" mode="fixed" orthographic="true" fovy="0.8" pos="-0.67627 -0.73794 0.35928" xyaxes="0.707107 -0.707107 0 0 0 1"/> -->
+        <camera name="front_cam" mode="fixed" pos="0.628 -0.961 0.780" xyaxes="0.866 0.500 0.000 -0.171 0.296 0.940"/>
+        <camera name="side_cam" mode="fixed" pos="0.991 0.629 0.640" xyaxes="-0.514 0.858 -0.000 -0.234 -0.140 0.962"/>
+        <camera name="rear_cam" mode="fixed" pos="-0.529 0.913 0.698" xyaxes="-0.828 -0.561 0.000 0.204 -0.301 0.932"/>
+        <camera name="iso_cam" mode="fixed" pos="-0.066 -0.097 0.523" xyaxes="0.705 -0.709 0.000 0.083 0.083 0.993"/>
 
         <body name="platform" pos="0 0 0" childclass="bones" mocap="false">
             <joint type="slide" axis="0 0 1" name="platform_slide" range="-2.5 2.5"/>
