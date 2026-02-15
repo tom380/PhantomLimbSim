@@ -1,0 +1,7 @@
+numpy
+scipy
+matplotlib
+imageio
+meshio
+trimesh
+mujoco==3.3.2
